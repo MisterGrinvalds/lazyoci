@@ -1,0 +1,29 @@
+/**
+ * lazyoci documentation theme
+ *
+ * Uses CSS custom properties for Docusaurus theming.
+ * See: https://docusaurus.io/docs/styling-layout#styling-your-site-with-custom-css
+ */
+
+:root {
+  --ifm-color-primary: #4a9eff;
+  --ifm-color-primary-dark: #2b8cff;
+  --ifm-color-primary-darker: #1c83ff;
+  --ifm-color-primary-darkest: #0068e0;
+  --ifm-color-primary-light: #69b0ff;
+  --ifm-color-primary-lighter: #78b8ff;
+  --ifm-color-primary-lightest: #a6d1ff;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #6db3ff;
+  --ifm-color-primary-dark: #4ea0ff;
+  --ifm-color-primary-darker: #3e97ff;
+  --ifm-color-primary-darkest: #0f7aff;
+  --ifm-color-primary-light: #8cc6ff;
+  --ifm-color-primary-lighter: #9ccfff;
+  --ifm-color-primary-lightest: #cae6ff;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}

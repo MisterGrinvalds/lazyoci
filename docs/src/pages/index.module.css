@@ -1,0 +1,51 @@
+.heroBanner {
+  padding: 4rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.cards {
+  padding: 3rem 0;
+}
+
+.card {
+  margin-bottom: 1.5rem;
+}
+
+.cardLink {
+  display: block;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+}
+
+.cardLink:hover {
+  text-decoration: none;
+}
+
+.cardContent {
+  padding: 1.5rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-card-border-radius);
+  height: 100%;
+  transition: border-color 0.2s;
+}
+
+.cardContent:hover {
+  border-color: var(--ifm-color-primary);
+}
+
+.cardEmoji {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
