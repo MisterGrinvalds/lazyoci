@@ -1,9 +1,13 @@
 package registry
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -105,6 +109,57 @@ func getDockerConfigPath() string {
 	// Default to ~/.docker/config.json
 	homeDir, _ := os.UserHomeDir()
 	return filepath.Join(homeDir, ".docker", "config.json")
+}
+
+// execCredentialHelper invokes a Docker credential helper binary to retrieve
+// credentials for the given registry URL.
+//
+// The Docker credential helper protocol works as follows:
+//   - The binary is named docker-credential-<helperName> and must be on $PATH.
+//   - To retrieve credentials: pipe the registry URL to stdin of
+//     `docker-credential-<helper> get` and parse the JSON response:
+//     {"ServerURL": "...", "Username": "...", "Secret": "..."}
+//   - To store credentials: pipe JSON to stdin of `docker-credential-<helper> store`
+//   - To erase credentials: pipe the registry URL to stdin of
+//     `docker-credential-<helper> erase`
+//   - To list credentials: invoke `docker-credential-<helper> list`
+//
+// See https://docs.docker.com/engine/reference/commandline/login/#credential-helpers
+func execCredentialHelper(helperName string, registryURL string) (username, password string, err error) {
+	// The binary is named docker-credential-<helperName> and must be on $PATH.
+	binaryName := "docker-credential-" + helperName
+
+	cmd := exec.Command(binaryName, "get")
+	cmd.Stdin = bytes.NewBufferString(registryURL)
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		// If the binary is not found, return ErrNotImplemented so the chain skips this store.
+		if errors.Is(err, exec.ErrNotFound) {
+			return "", "", ErrNotImplemented
+		}
+		// The helper returned an error (e.g. "credentials not found").
+		return "", "", fmt.Errorf("credential helper %s: %w (%s)", binaryName, err, strings.TrimSpace(stderr.String()))
+	}
+
+	// Parse the JSON response: {"ServerURL": "...", "Username": "...", "Secret": "..."}
+	var response struct {
+		ServerURL string `json:"ServerURL"`
+		Username  string `json:"Username"`
+		Secret    string `json:"Secret"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &response); err != nil {
+		return "", "", fmt.Errorf("credential helper %s: failed to parse response: %w", binaryName, err)
+	}
+
+	if response.Username == "" && response.Secret == "" {
+		return "", "", ErrCredentialsNotFound
+	}
+
+	return response.Username, response.Secret, nil
 }
 
 func normalizeRegistry(registry string) string {
