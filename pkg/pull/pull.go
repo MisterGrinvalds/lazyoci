@@ -258,7 +258,9 @@ func (p *Puller) pullOCILayout(
 		if artifactType != registry.ArtifactTypeImage {
 			return result, fmt.Errorf("cannot load %s artifact into Docker (only images supported)", artifactType)
 		}
-		if err := LoadToDocker(dest, opts.Reference); err != nil {
+		// Build a full reference with tag — Docker requires "repo:tag" format.
+		dockerRef := ref.Registry + "/" + ref.Repository + ":" + ref.Tag
+		if err := LoadToDocker(dest, dockerRef); err != nil {
 			return result, fmt.Errorf("pulled but failed to load into Docker: %w", err)
 		}
 		result.LoadedToDocker = true
