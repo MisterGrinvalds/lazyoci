@@ -1,0 +1,16 @@
+version: 1
+artifacts:
+  - type: artifact
+    name: app-config
+    mediaType: application/vnd.example.config.v1
+    files:
+      - path: config.json
+        mediaType: application/vnd.example.config.v1+json
+      - path: policy.rego
+        mediaType: application/vnd.openpolicyagent.policy.layer.v1+rego
+    targets:
+      - registry: localhost:5050/examples/app-config
+        tags:
+          - "{{ .Version }}"
+          - "{{ .GitSHA }}"
+          - latest

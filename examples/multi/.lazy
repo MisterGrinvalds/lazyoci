@@ -1,0 +1,38 @@
+version: 1
+artifacts:
+  # 1. Build the container image from a Dockerfile.
+  - type: image
+    name: api-server
+    dockerfile: Dockerfile
+    context: "."
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    targets:
+      - registry: localhost:5050/examples/multi/api-server
+        tags:
+          - "{{ .Version }}"
+          - "{{ .VersionMajorMinor }}"
+          - "{{ .GitSHA }}"
+
+  # 2. Package the Helm chart that deploys the image.
+  - type: helm
+    name: api-chart
+    chartPath: chart
+    targets:
+      - registry: localhost:5050/examples/multi/charts/api-server
+        tags:
+          - "{{ .ChartVersion }}"
+
+  # 3. Publish the OpenAPI spec as a generic OCI artifact.
+  - type: artifact
+    name: api-spec
+    mediaType: application/vnd.example.openapi.v1
+    files:
+      - path: openapi.yaml
+        mediaType: application/vnd.oai.openapi+yaml
+    targets:
+      - registry: localhost:5050/examples/multi/api-spec
+        tags:
+          - "{{ .Version }}"
+          - latest

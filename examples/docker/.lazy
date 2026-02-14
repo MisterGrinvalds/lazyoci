@@ -1,0 +1,10 @@
+version: 1
+artifacts:
+  - type: docker
+    name: local-nginx
+    image: nginx:alpine
+    targets:
+      - registry: localhost:5050/examples/nginx-mirror
+        tags:
+          - "{{ .Version }}"
+          - latest

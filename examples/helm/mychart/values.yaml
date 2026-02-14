@@ -1,0 +1,18 @@
+replicaCount: 1
+
+image:
+  repository: localhost:5050/examples/hello-server
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 64Mi
+  requests:
+    cpu: 50m
+    memory: 32Mi

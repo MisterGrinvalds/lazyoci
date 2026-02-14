@@ -1,0 +1,32 @@
+openapi: "3.0.3"
+info:
+  title: API Server
+  version: "1.0.0"
+  description: Example API for the lazyoci multi-artifact build demo.
+paths:
+  /healthz:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+  /api/v1/greeting:
+    get:
+      summary: Return a greeting
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string

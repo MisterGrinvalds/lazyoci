@@ -2,7 +2,7 @@
 	registry-up registry-down registry-logs registry-push-test \
 	push-image push-helm push-sbom-spdx push-sbom-cyclonedx \
 	push-signature push-attestation push-wasm registry-push-all \
-	test-registry test-config test-cache test-pull test-artifacts test-all \
+	test-registry test-config test-cache test-pull test-artifacts test-build test-all \
 	docs-install docs-dev docs-build docs-serve
 
 # Build variables
@@ -225,6 +225,10 @@ test-pull:
 ## test-artifacts: Test artifact handlers (dispatch, actions, details)
 test-artifacts:
 	go test -v ./pkg/artifacts/...
+
+## test-build: Test build system (config parsing, template rendering, validation)
+test-build:
+	go test -v ./pkg/build/...
 
 ## test-all: Run all unit tests with race detection
 test-all:

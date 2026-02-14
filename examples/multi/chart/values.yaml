@@ -1,0 +1,10 @@
+replicaCount: 2
+
+image:
+  repository: localhost:5050/examples/multi/api-server
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080

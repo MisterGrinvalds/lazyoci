@@ -1,0 +1,32 @@
+{
+  "_type": "https://in-toto.io/Statement/v0.1",
+  "predicateType": "https://slsa.dev/provenance/v0.2",
+  "subject": [
+    {
+      "name": "localhost:5050/test/myapp",
+      "digest": {
+        "sha256": "abc123def456789000000000000000000000000000000000000000000000000"
+      }
+    }
+  ],
+  "predicate": {
+    "builder": {
+      "id": "https://github.com/actions/runner"
+    },
+    "buildType": "https://github.com/actions/runner/v1",
+    "invocation": {
+      "configSource": {
+        "uri": "git+https://github.com/example/myapp@refs/heads/main"
+      }
+    },
+    "metadata": {
+      "buildStartedOn": "2025-01-01T00:00:00Z",
+      "buildFinishedOn": "2025-01-01T00:05:00Z",
+      "completeness": {
+        "parameters": true,
+        "environment": true,
+        "materials": true
+      }
+    }
+  }
+}

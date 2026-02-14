@@ -1,0 +1,6 @@
+apiVersion: v2
+name: mychart
+version: 0.1.0
+description: An example Helm chart for lazyoci build
+type: application
+appVersion: "1.0.0"

@@ -1,0 +1,21 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "myapp-v1.0.0",
+  "documentNamespace": "https://example.com/myapp-v1.0.0",
+  "creationInfo": {
+    "created": "2025-01-01T00:00:00Z",
+    "creators": ["Tool: lazyoci-test"],
+    "licenseListVersion": "3.22"
+  },
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package",
+      "name": "myapp",
+      "versionInfo": "1.0.0",
+      "downloadLocation": "https://example.com/myapp",
+      "filesAnalyzed": false
+    }
+  ]
+}

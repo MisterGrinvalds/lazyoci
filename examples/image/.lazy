@@ -1,0 +1,18 @@
+version: 1
+artifacts:
+  - type: image
+    name: hello-server
+    dockerfile: Dockerfile
+    context: "."
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    buildArgs:
+      GO_VERSION: "1.23"
+    targets:
+      - registry: registry.digitalocean.com/greenforests/examples/hello-server
+        tags:
+          - "{{ .Version }}"
+          - "{{ .VersionMajorMinor }}"
+          - "{{ .GitSHA }}"
+          - latest

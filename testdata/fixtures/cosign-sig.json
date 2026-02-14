@@ -1,0 +1,15 @@
+{
+  "critical": {
+    "identity": {
+      "docker-reference": "localhost:5050/test/myapp"
+    },
+    "image": {
+      "docker-manifest-digest": "sha256:abc123def456789000000000000000000000000000000000000000000000000"
+    },
+    "type": "cosign container image signature"
+  },
+  "optional": {
+    "creator": "lazyoci test fixture",
+    "timestamp": 1704067200
+  }
+}

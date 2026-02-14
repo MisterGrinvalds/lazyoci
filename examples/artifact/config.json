@@ -1,0 +1,16 @@
+{
+  "app": {
+    "name": "hello-server",
+    "port": 8080,
+    "logLevel": "info"
+  },
+  "features": {
+    "rateLimit": true,
+    "maxRequestsPerMinute": 100
+  },
+  "database": {
+    "host": "postgres.default.svc.cluster.local",
+    "port": 5432,
+    "name": "appdb"
+  }
+}
