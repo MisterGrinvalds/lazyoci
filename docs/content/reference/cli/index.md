@@ -35,11 +35,17 @@ lazyoci
 │   ├── add <url>
 │   ├── remove <url>
 │   └── test <url>
-└── config
-    ├── get <key>
-    ├── set <key> <value>
-    ├── list
-    └── path
+├── config
+│   ├── get <key>
+│   ├── set <key> <value>
+│   ├── list
+│   └── path
+├── version
+└── completion
+    ├── bash
+    ├── zsh
+    ├── fish
+    └── powershell
 ```
 
 ## Command Arguments
@@ -57,3 +63,8 @@ lazyoci
 | `registry test` | `<url>` | ExactArgs(1) |
 | `config get` | `<key>` | ExactArgs(1) |
 | `config set` | `<key> <value>` | ExactArgs(2) |
+| `version` | (none) | NoArgs |
+| `completion bash` | (none) | NoArgs |
+| `completion zsh` | (none) | NoArgs |
+| `completion fish` | (none) | NoArgs |
+| `completion powershell` | (none) | NoArgs |

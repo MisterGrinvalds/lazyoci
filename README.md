@@ -18,17 +18,62 @@ Browse Docker Hub, Quay.io, GitHub Packages, and custom registries to discover c
 
 ## Installation
 
+### Homebrew (macOS / Linux)
+
+```bash
+brew install greenforests-studio/tap/lazyoci
+```
+
+### Scoop (Windows)
+
+```powershell
+scoop bucket add greenforests https://github.com/greenforests-studio/scoop-bucket
+scoop install lazyoci
+```
+
+### Install Script (macOS / Linux)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mistergrinvalds/lazyoci/main/install.sh | sh
+```
+
+Install to a custom directory (no sudo):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mistergrinvalds/lazyoci/main/install.sh | BINDIR=~/.local/bin sh
+```
+
+### Go
+
 ```bash
 go install github.com/mistergrinvalds/lazyoci/cmd/lazyoci@latest
 ```
 
-Or build from source:
+### From Source
 
 ```bash
 git clone https://github.com/mistergrinvalds/lazyoci.git
 cd lazyoci
-make build
-# binary is at ./bin/lazyoci
+make install            # installs to /usr/local/bin
+make install-completions # installs shell completions
+```
+
+### Shell Completions
+
+Homebrew and the install script handle completions automatically. For `go install` or manual setups:
+
+```bash
+# Bash (add to ~/.bashrc)
+source <(lazyoci completion bash)
+
+# Zsh (add to ~/.zshrc)
+source <(lazyoci completion zsh)
+
+# Fish
+lazyoci completion fish | source
+
+# PowerShell (add to $PROFILE)
+lazyoci completion powershell | Out-String | Invoke-Expression
 ```
 
 ## Quick Start
@@ -162,7 +207,7 @@ Four artifact types are supported:
 | `artifact` | Package generic files with custom media types |
 | `docker` | Push existing Docker daemon image to a registry |
 
-Tag templates support `{{ .Tag }}`, `{{ .GitSHA }}`, `{{ .GitBranch }}`, `{{ .ChartVersion }}`, and `{{ .Timestamp }}`.
+Tag templates support `{{ .Version }}`, `{{ .VersionMajor }}`, `{{ .VersionMinor }}`, `{{ .VersionPatch }}`, `{{ .VersionMajorMinor }}`, `{{ .Tag }}`, `{{ .GitSHA }}`, `{{ .GitBranch }}`, `{{ .ChartVersion }}`, and `{{ .Timestamp }}`.
 
 See [`examples/`](examples/) for complete examples of each artifact type.
 
@@ -281,6 +326,8 @@ GHCR doesn't support the catalog API; use `browse tags` with known repository pa
 | Variable | Description |
 |----------|-------------|
 | `LAZYOCI_ARTIFACT_DIR` | Override artifact storage directory |
+| `LAZYOCI_TAG` | Default value for `--tag` in `lazyoci build` |
+| `LAZYOCI_VERSION` | Override version for semver template variables |
 | `XDG_CONFIG_HOME` | Override config directory (default `~/.config`) |
 | `DOCKER_CONFIG` | Override Docker config directory (default `~/.docker`) |
 | `COLORFGBG` | Terminal background hint for dark/light mode detection |
