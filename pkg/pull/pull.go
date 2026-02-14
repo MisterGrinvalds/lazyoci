@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/mistergrinvalds/lazyoci/pkg/ociutil"
 	"github.com/mistergrinvalds/lazyoci/pkg/registry"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"oras.land/oras-go/v2"
@@ -75,13 +76,13 @@ func NewPuller(quiet bool) *Puller {
 // Pull downloads an OCI artifact from a registry to local storage.
 func (p *Puller) Pull(ctx context.Context, opts PullOptions) (*PullResult, error) {
 	// Parse reference
-	ref, err := ParseReference(opts.Reference)
+	ref, err := ociutil.ParseReference(opts.Reference)
 	if err != nil {
 		return nil, fmt.Errorf("invalid reference: %w", err)
 	}
 
 	// Create remote repository
-	repo, err := NewRemoteRepository(ref, opts.Insecure, opts.CredentialFunc)
+	repo, err := ociutil.NewRemoteRepository(ref, opts.Insecure, opts.CredentialFunc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to registry: %w", err)
 	}
@@ -170,7 +171,7 @@ func (p *Puller) detectArtifactType(ctx context.Context, repo *remote.Repository
 func (p *Puller) pullOCILayout(
 	ctx context.Context,
 	repo *remote.Repository,
-	ref *Reference,
+	ref *ociutil.Reference,
 	dest string,
 	opts PullOptions,
 	artifactType registry.ArtifactType,
@@ -380,48 +381,19 @@ func detectArtifactTypeFromMediaTypes(manifestType, configType string, layerType
 	return registry.ArtifactTypeUnknown, ""
 }
 
-// Reference represents a parsed OCI reference.
-type Reference struct {
-	Registry   string
-	Repository string
-	Tag        string
-}
+// Reference is an alias for ociutil.Reference for backward compatibility.
+type Reference = ociutil.Reference
 
 // ParseReference parses an image reference like "docker.io/library/nginx:latest".
+// This delegates to ociutil.ParseReference.
 func ParseReference(ref string) (*Reference, error) {
-	// Handle docker.io shorthand
-	if !strings.Contains(ref, "/") {
-		// Single name like "nginx" → docker.io/library/nginx
-		ref = "docker.io/library/" + ref
-	} else if !strings.Contains(strings.Split(ref, "/")[0], ".") &&
-		!strings.Contains(strings.Split(ref, "/")[0], ":") &&
-		!strings.Contains(strings.Split(ref, "/")[0], "localhost") {
-		// No registry specified, e.g., "library/nginx" → docker.io/library/nginx
-		ref = "docker.io/" + ref
-	}
+	return ociutil.ParseReference(ref)
+}
 
-	// Split off tag
-	tag := "latest"
-	if idx := strings.LastIndex(ref, ":"); idx != -1 {
-		// Make sure this is a tag, not a port
-		afterColon := ref[idx+1:]
-		if !strings.Contains(afterColon, "/") {
-			tag = afterColon
-			ref = ref[:idx]
-		}
-	}
-
-	// Split registry and repository
-	parts := strings.SplitN(ref, "/", 2)
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid reference format: %s", ref)
-	}
-
-	return &Reference{
-		Registry:   parts[0],
-		Repository: parts[1],
-		Tag:        tag,
-	}, nil
+// NewRemoteRepository creates an oras remote.Repository for the given reference.
+// This delegates to ociutil.NewRemoteRepository.
+func NewRemoteRepository(ref *Reference, insecure bool, credFn auth.CredentialFunc) (*remote.Repository, error) {
+	return ociutil.NewRemoteRepository(ref, insecure, credFn)
 }
 
 // isLayer returns true if the media type represents a layer blob.

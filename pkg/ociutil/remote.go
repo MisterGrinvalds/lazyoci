@@ -1,4 +1,4 @@
-package pull
+package ociutil
 
 import (
 	"oras.land/oras-go/v2/registry/remote"
