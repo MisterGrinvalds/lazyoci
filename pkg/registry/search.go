@@ -1,10 +1,12 @@
 package registry
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"time"
 )
 
@@ -13,14 +15,14 @@ var _ = time.Second
 
 // SearchResult represents a repository from search
 type SearchResult struct {
-	Name            string `json:"repo_name"`
-	Description     string `json:"short_description"`
-	StarCount       int    `json:"star_count"`
-	PullCount       int64  `json:"pull_count"`
-	IsOfficial      bool   `json:"is_official"`
-	IsAutomated     bool   `json:"is_automated"`
-	RegistryURL     string `json:"registry_url"`
-	LastUpdated     string `json:"last_updated,omitempty"`
+	Name        string `json:"repo_name"`
+	Description string `json:"short_description"`
+	StarCount   int    `json:"star_count"`
+	PullCount   int64  `json:"pull_count"`
+	IsOfficial  bool   `json:"is_official"`
+	IsAutomated bool   `json:"is_automated"`
+	RegistryURL string `json:"registry_url"`
+	LastUpdated string `json:"last_updated,omitempty"`
 }
 
 // SearchResponse represents the Docker Hub search API response
@@ -69,6 +71,11 @@ func (c *Client) Search(registryURL, query string) ([]*SearchResult, error) {
 		return nil, err
 	}
 
+	// Sort results by popularity (pull count) descending
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].PullCount > results[j].PullCount
+	})
+
 	// Cache the results
 	c.setCache(cacheKey, results, SearchCacheTTL)
 
@@ -114,10 +121,10 @@ func (c *Client) searchDockerHub(query string) ([]*SearchResult, error) {
 // QuaySearchResponse represents Quay.io search response
 type QuaySearchResponse struct {
 	Results []struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
+		Name        string  `json:"name"`
+		Description string  `json:"description"`
 		Popularity  float64 `json:"popularity"`
-		IsPublic    bool   `json:"is_public"`
+		IsPublic    bool    `json:"is_public"`
 		Namespace   struct {
 			Name string `json:"name"`
 		} `json:"namespace"`
@@ -171,20 +178,29 @@ func (c *Client) searchGHCR(query string) ([]*SearchResult, error) {
 }
 
 func (c *Client) searchOCI(registryURL, query string) ([]*SearchResult, error) {
-	// For generic OCI registries, try to list and filter
-	namespaces, err := c.ListNamespaces(registryURL)
+	// For generic OCI registries, list all repositories via catalog and filter.
+	reg, err := c.getRegistry(registryURL)
 	if err != nil {
 		return nil, err
 	}
 
+	ctx := context.Background()
 	var results []*SearchResult
-	for _, ns := range namespaces {
-		if containsIgnoreCase(ns, query) {
-			results = append(results, &SearchResult{
-				Name:        ns,
-				RegistryURL: registryURL,
-			})
+
+	err = reg.Repositories(ctx, "", func(repos []string) error {
+		for _, repo := range repos {
+			if query == "" || containsIgnoreCase(repo, query) {
+				results = append(results, &SearchResult{
+					Name:        repo,
+					RegistryURL: registryURL,
+				})
+			}
 		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	return results, nil

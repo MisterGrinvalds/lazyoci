@@ -1,7 +1,10 @@
 package keybindings
 
 import (
+	"fmt"
+
 	"github.com/gdamore/tcell/v2"
+	"github.com/mistergrinvalds/lazyoci/pkg/gui/theme"
 	"github.com/rivo/tview"
 )
 
@@ -14,6 +17,9 @@ type Controller interface {
 	FocusDetails()
 	CycleFocus()
 	IsInputFocused() bool
+	ShowSettings()
+	ShowHelp()
+	ShowThemePicker()
 }
 
 // Setup configures all keybindings for the application
@@ -55,7 +61,7 @@ func Setup(app *tview.Application, ctrl Controller) {
 				return nil
 
 			case '?':
-				showHelp(app)
+				ctrl.ShowHelp()
 				return nil
 
 			case '1':
@@ -72,6 +78,14 @@ func Setup(app *tview.Application, ctrl Controller) {
 
 			case '4':
 				ctrl.FocusDetails()
+				return nil
+
+			case 'S': // Shift+S for settings
+				ctrl.ShowSettings()
+				return nil
+
+			case 'T': // Shift+T for theme picker
+				ctrl.ShowThemePicker()
 				return nil
 			}
 		} else {
@@ -90,63 +104,51 @@ func Setup(app *tview.Application, ctrl Controller) {
 	})
 }
 
-func showHelp(app *tview.Application) {
-	helpText := `[yellow]Keybindings[white]
+// GetHelpText returns the help text for display
+func GetHelpText() string {
+	emphasis := theme.Tag("emphasis")
+	text := theme.Tag("text")
+	success := theme.Tag("success")
+	muted := theme.Tag("muted")
 
-[green]Navigation[white]
+	return fmt.Sprintf(`%sKeybindings%s
+
+%sNavigation%s
   Tab         Cycle focus between panels
-  Shift+Tab   Go back to registry tree
-  1           Focus registry tree
+  Shift+Tab   Go back to registry list
+  1           Focus registry list
   2 or /      Focus search
   3           Focus artifacts list
-  4           Focus details
+  4           Focus details panel
   j/k         Move down/up (vim-style)
+  g/G         Scroll to top/bottom (in details)
   Enter       Select item
 
-[green]Search[white]
+%sSearch%s
   /           Start search
   Enter       Execute search
-  Esc         Cancel search
+  Esc         Cancel search / clear filter
 
-[green]Actions[white]
-  y           Copy digest to clipboard
-  p           Pull artifact (shows command)
+%sArtifact Actions%s
+  p           Pull artifact (shows options)
+  d           Pull & load to Docker directly
 
-[green]General[white]
+%sSettings%s
+  S           Open settings modal
+  T           Open theme picker
+
+%sGeneral%s
   ?           Show this help
   q           Quit
   Ctrl+C      Force quit
 
-Press Esc or Enter to close this help.`
-
-	textView := tview.NewTextView().
-		SetDynamicColors(true).
-		SetText(helpText).
-		SetScrollable(true)
-	textView.SetBorder(true).SetTitle(" Help ")
-
-	// Capture the current root to restore later
-	// Create a modal-like overlay
-	flex := tview.NewFlex().
-		AddItem(nil, 0, 1, false).
-		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-			AddItem(nil, 0, 1, false).
-			AddItem(textView, 24, 1, true).
-			AddItem(nil, 0, 1, false), 70, 1, true).
-		AddItem(nil, 0, 1, false)
-
-	// Store current root
-	pages := tview.NewPages().
-		AddPage("help", flex, true, true)
-
-	textView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyEscape || event.Key() == tcell.KeyEnter {
-			app.Stop()
-			return nil
-		}
-		return event
-	})
-
-	// This is a simplified help - in production, we'd overlay on the existing UI
-	app.SetRoot(pages, true)
+%sPress Esc or Enter to close this help.%s`,
+		emphasis, text,
+		success, text,
+		success, text,
+		success, text,
+		success, text,
+		success, text,
+		muted, theme.ResetTag(),
+	)
 }

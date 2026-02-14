@@ -2,209 +2,128 @@ package views
 
 import (
 	"github.com/gdamore/tcell/v2"
+	"github.com/mistergrinvalds/lazyoci/pkg/config"
+	"github.com/mistergrinvalds/lazyoci/pkg/gui/theme"
 	"github.com/mistergrinvalds/lazyoci/pkg/registry"
 	"github.com/rivo/tview"
 )
 
-// RegistryView displays the registry tree navigation
+// RegistryView displays the list of configured registries
 type RegistryView struct {
-	TreeView *tview.TreeView
+	List     *tview.List
 	registry *registry.Client
-	onSelect func(repo string)
-	root     *tview.TreeNode
+	onSelect func(registryURL string)
+	onAdd    func()
+	onDelete func(registryURL string)
+
+	registries []config.Registry
+	selected   int
 }
 
-// NewRegistryView creates a new registry tree view
-func NewRegistryView(reg *registry.Client, onSelect func(repo string)) *RegistryView {
+// NewRegistryView creates a new registry list view
+func NewRegistryView(reg *registry.Client, onSelect func(registryURL string)) *RegistryView {
 	rv := &RegistryView{
 		registry: reg,
 		onSelect: onSelect,
 	}
 
-	rv.root = tview.NewTreeNode("Registries").SetColor(tview.Styles.SecondaryTextColor)
-	rv.TreeView = tview.NewTreeView().
-		SetRoot(rv.root).
-		SetCurrentNode(rv.root)
+	rv.List = tview.NewList().
+		ShowSecondaryText(false).
+		SetHighlightFullLine(true)
 
-	rv.TreeView.SetBorder(true).SetTitle(" [1] Registries ")
-	rv.TreeView.SetSelectedFunc(rv.handleSelect)
+	rv.List.SetBorder(true).SetTitle(" [1] Registries (a:add d:del) ")
+
+	// Apply theme styling
+	rv.ApplyTheme()
 
 	rv.loadRegistries()
+
+	// Handle selection
+	rv.List.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
+		if index < len(rv.registries) {
+			rv.selected = index
+			if rv.onSelect != nil {
+				rv.onSelect(rv.registries[index].URL)
+			}
+		}
+	})
+
+	// Handle keybindings
+	rv.List.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Rune() {
+		case 'a', 'A':
+			if rv.onAdd != nil {
+				rv.onAdd()
+			}
+			return nil
+		case 'd', 'D':
+			if rv.onDelete != nil {
+				url := rv.GetSelectedRegistry()
+				if url != "" {
+					rv.onDelete(url)
+				}
+			}
+			return nil
+		}
+		return event
+	})
 
 	return rv
 }
 
+// ApplyTheme applies the current theme to this view's widgets.
+func (rv *RegistryView) ApplyTheme() {
+	rv.List.SetBackgroundColor(theme.BackgroundColor())
+	rv.List.SetBorderColor(theme.BorderNormalColor())
+	rv.List.SetTitleColor(theme.TitleColor())
+	rv.List.SetMainTextColor(theme.TextColor())
+	rv.List.SetSelectedBackgroundColor(theme.SelectionBgColor())
+	rv.List.SetSelectedTextColor(theme.SelectionFgColor())
+	rv.List.SetSecondaryTextColor(theme.TextMutedColor())
+}
+
+// SetOnAdd sets the callback for adding a registry
+func (rv *RegistryView) SetOnAdd(fn func()) {
+	rv.onAdd = fn
+}
+
+// SetOnDelete sets the callback for deleting a registry
+func (rv *RegistryView) SetOnDelete(fn func(registryURL string)) {
+	rv.onDelete = fn
+}
+
 func (rv *RegistryView) loadRegistries() {
-	registries := rv.registry.GetRegistries()
+	rv.List.Clear()
+	rv.registries = rv.registry.GetRegistries()
 
-	for _, reg := range registries {
-		node := tview.NewTreeNode(reg.Name).
-			SetReference(registryRef{url: reg.URL, name: reg.Name}).
-			SetSelectable(true).
-			SetExpanded(false)
-		node.SetColor(tview.Styles.PrimaryTextColor)
-		rv.root.AddChild(node)
-	}
-}
-
-func (rv *RegistryView) handleSelect(node *tview.TreeNode) {
-	ref := node.GetReference()
-	if ref == nil {
-		return
-	}
-
-	switch r := ref.(type) {
-	case registryRef:
-		if !node.IsExpanded() {
-			rv.loadNamespaces(node, r.url)
+	for _, reg := range rv.registries {
+		name := reg.Name
+		if name == "" || name == reg.URL {
+			name = reg.URL
+		} else {
+			name = name + " (" + reg.URL + ")"
 		}
-		node.SetExpanded(!node.IsExpanded())
+		rv.List.AddItem(name, "", 0, nil)
+	}
 
-	case namespaceRef:
-		if !node.IsExpanded() {
-			rv.loadRepositories(node, r.registry, r.namespace)
-		}
-		node.SetExpanded(!node.IsExpanded())
-
-	case repositoryRef:
-		if rv.onSelect != nil {
-			rv.onSelect(r.fullPath)
-		}
+	if len(rv.registries) > 0 {
+		rv.List.SetCurrentItem(0)
 	}
 }
 
-func (rv *RegistryView) loadNamespaces(parent *tview.TreeNode, registryURL string) {
-	parent.ClearChildren()
-
-	namespaces, err := rv.registry.ListNamespaces(registryURL)
-	if err != nil {
-		infoNode := tview.NewTreeNode("[gray]Use / to search public registries[-]").
-			SetSelectable(false)
-		parent.AddChild(infoNode)
-		return
-	}
-
-	if len(namespaces) == 0 {
-		infoNode := tview.NewTreeNode("[gray]No namespaces found[-]").
-			SetSelectable(false)
-		parent.AddChild(infoNode)
-		return
-	}
-
-	for _, ns := range namespaces {
-		node := tview.NewTreeNode(ns).
-			SetReference(namespaceRef{registry: registryURL, namespace: ns}).
-			SetSelectable(true)
-		parent.AddChild(node)
-	}
-}
-
-func (rv *RegistryView) loadRepositories(parent *tview.TreeNode, registryURL, namespace string) {
-	parent.ClearChildren()
-
-	repos, err := rv.registry.ListRepositories(registryURL, namespace)
-	if err != nil {
-		errorNode := tview.NewTreeNode("[red]Error: " + err.Error() + "[-]").SetSelectable(false)
-		parent.AddChild(errorNode)
-		return
-	}
-
-	if len(repos) == 0 {
-		infoNode := tview.NewTreeNode("[gray]No repositories found[-]").
-			SetSelectable(false)
-		parent.AddChild(infoNode)
-		return
-	}
-
-	for _, repo := range repos {
-		fullPath := registryURL + "/" + namespace + "/" + repo
-		node := tview.NewTreeNode(repo).
-			SetReference(repositoryRef{fullPath: fullPath}).
-			SetSelectable(true)
-		parent.AddChild(node)
-	}
-}
-
-// AddRepository adds a repository node directly (for search results)
-func (rv *RegistryView) AddRepository(registryURL, repoPath string) {
-	for _, child := range rv.root.GetChildren() {
-		ref := child.GetReference()
-		if r, ok := ref.(registryRef); ok && r.url == registryURL {
-			fullPath := registryURL + "/" + repoPath
-			node := tview.NewTreeNode(repoPath).
-				SetReference(repositoryRef{fullPath: fullPath}).
-				SetSelectable(true).
-				SetColor(tcell.ColorYellow)
-			child.AddChild(node)
-			child.SetExpanded(true)
-			rv.TreeView.SetCurrentNode(node)
-			return
-		}
-	}
-}
-
-// GetSelectedRegistry returns the URL of the currently selected or parent registry
+// GetSelectedRegistry returns the currently selected registry URL
 func (rv *RegistryView) GetSelectedRegistry() string {
-	node := rv.TreeView.GetCurrentNode()
-	if node == nil {
-		return ""
+	index := rv.List.GetCurrentItem()
+	if index >= 0 && index < len(rv.registries) {
+		return rv.registries[index].URL
 	}
-
-	// Walk up the tree to find the registry
-	for node != nil {
-		ref := node.GetReference()
-		switch r := ref.(type) {
-		case registryRef:
-			return r.url
-		case namespaceRef:
-			return r.registry
-		case repositoryRef:
-			// Parse registry from fullPath (e.g., "docker.io/library/nginx")
-			parts := splitFirst(r.fullPath, "/")
-			if len(parts) > 0 {
-				return parts[0]
-			}
-		}
-		node = findParent(rv.root, node)
+	if len(rv.registries) > 0 {
+		return rv.registries[0].URL
 	}
-	return ""
+	return "docker.io"
 }
 
-func findParent(root, target *tview.TreeNode) *tview.TreeNode {
-	if root == nil {
-		return nil
-	}
-	for _, child := range root.GetChildren() {
-		if child == target {
-			return root
-		}
-		if found := findParent(child, target); found != nil {
-			return found
-		}
-	}
-	return nil
-}
-
-func splitFirst(s, sep string) []string {
-	for i := 0; i < len(s); i++ {
-		if string(s[i]) == sep {
-			return []string{s[:i], s[i+1:]}
-		}
-	}
-	return []string{s}
-}
-
-// Reference types for tree nodes
-type registryRef struct {
-	url  string
-	name string
-}
-
-type namespaceRef struct {
-	registry  string
-	namespace string
-}
-
-type repositoryRef struct {
-	fullPath string
+// Refresh reloads the registry list
+func (rv *RegistryView) Refresh() {
+	rv.loadRegistries()
 }

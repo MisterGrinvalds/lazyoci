@@ -4,21 +4,22 @@ import (
 	"fmt"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/mistergrinvalds/lazyoci/pkg/gui/theme"
 	"github.com/mistergrinvalds/lazyoci/pkg/registry"
 	"github.com/rivo/tview"
 )
 
 // SearchView displays search results
 type SearchView struct {
-	Table       *tview.Table
-	InputField  *tview.InputField
-	Flex        *tview.Flex
-	registry    *registry.Client
-	onSelect    func(registryURL, repoName string)
-	results     []*registry.SearchResult
-	currentReg  string
-	statusText  *tview.TextView
-	app         *tview.Application
+	Table      *tview.Table
+	InputField *tview.InputField
+	Flex       *tview.Flex
+	registry   *registry.Client
+	onSelect   func(registryURL, repoName string)
+	results    []*registry.SearchResult
+	currentReg string
+	statusText *tview.TextView
+	app        *tview.Application
 }
 
 // NewSearchView creates a new search view
@@ -29,6 +30,7 @@ func NewSearchView(reg *registry.Client, onSelect func(registryURL, repoName str
 	}
 
 	sv.setupUI()
+	sv.ApplyTheme()
 	return sv
 }
 
@@ -93,8 +95,6 @@ func (sv *SearchView) setupUI() {
 		SetFieldWidth(0).
 		SetPlaceholder("Type to search (e.g., nginx, postgres, redis)...")
 
-	sv.InputField.SetFieldBackgroundColor(tcell.ColorDarkSlateGray)
-
 	// Results table
 	sv.Table = tview.NewTable().
 		SetBorders(false).
@@ -132,13 +132,41 @@ func (sv *SearchView) setupUI() {
 	sv.showWelcome()
 }
 
+// ApplyTheme applies the current theme to this view's widgets.
+func (sv *SearchView) ApplyTheme() {
+	// InputField
+	sv.InputField.SetBackgroundColor(theme.BackgroundColor())
+	sv.InputField.SetFieldBackgroundColor(theme.ElementBgColor())
+	sv.InputField.SetFieldTextColor(theme.TextColor())
+	sv.InputField.SetLabelColor(theme.TextColor())
+	sv.InputField.SetPlaceholderTextColor(theme.PlaceholderColor())
+
+	// Table
+	sv.Table.SetBackgroundColor(theme.BackgroundColor())
+	sv.Table.SetBorderColor(theme.BorderNormalColor())
+	sv.Table.SetTitleColor(theme.TitleColor())
+	sv.Table.SetSelectedStyle(tcell.StyleDefault.
+		Background(theme.SelectionBgColor()).
+		Foreground(theme.SelectionFgColor()))
+
+	// Status text
+	sv.statusText.SetBackgroundColor(theme.BackgroundColor())
+	sv.statusText.SetTextColor(theme.TextColor())
+
+	// Flex
+	sv.Flex.SetBackgroundColor(theme.BackgroundColor())
+
+	// Re-apply header colors
+	sv.setupHeaders()
+}
+
 func (sv *SearchView) setupHeaders() {
 	headers := []string{"", "Repository", "Description", "Stars", "Pulls"}
 	widths := []int{3, 30, 40, 8, 10}
 
 	for col, header := range headers {
 		cell := tview.NewTableCell(header).
-			SetTextColor(tcell.ColorYellow).
+			SetTextColor(theme.HeaderColor()).
 			SetSelectable(false).
 			SetExpansion(0)
 		if col < len(widths) {
@@ -151,7 +179,7 @@ func (sv *SearchView) setupHeaders() {
 func (sv *SearchView) showWelcome() {
 	sv.Table.Clear()
 	sv.setupHeaders()
-	sv.statusText.SetText("[gray]Enter a search term and press Enter[-]")
+	sv.statusText.SetText(theme.Tag("muted") + "Enter a search term and press Enter" + theme.ResetTag())
 }
 
 // SetRegistry sets the current registry for searches
@@ -173,7 +201,7 @@ func (sv *SearchView) Search(query string) {
 		sv.InputField.SetLabel(" Search docker.io: ")
 	}
 
-	sv.statusText.SetText("[yellow]Searching " + sv.currentReg + "...[-]")
+	sv.statusText.SetText(theme.Tag("warning") + "Searching " + sv.currentReg + "..." + theme.ResetTag())
 	sv.Table.Clear()
 	sv.setupHeaders()
 
@@ -185,7 +213,7 @@ func (sv *SearchView) Search(query string) {
 		if sv.app != nil {
 			sv.app.QueueUpdateDraw(func() {
 				if err != nil {
-					sv.statusText.SetText(fmt.Sprintf("[red]Error: %v[-]", err))
+					sv.statusText.SetText(fmt.Sprintf("%sError: %v%s", theme.Tag("error"), err, theme.ResetTag()))
 					return
 				}
 
@@ -193,9 +221,9 @@ func (sv *SearchView) Search(query string) {
 				sv.renderResults()
 
 				if len(results) == 0 {
-					sv.statusText.SetText("[gray]No results found[-]")
+					sv.statusText.SetText(theme.Tag("muted") + "No results found" + theme.ResetTag())
 				} else {
-					sv.statusText.SetText(fmt.Sprintf("[green]Found %d repositories[-]", len(results)))
+					sv.statusText.SetText(fmt.Sprintf("%sFound %d repositories%s", theme.Tag("success"), len(results), theme.ResetTag()))
 				}
 			})
 		}
@@ -209,7 +237,7 @@ func (sv *SearchView) renderResults() {
 		// Official badge
 		badge := ""
 		if result.IsOfficial {
-			badge = "[green]✓[-]"
+			badge = theme.Tag("success") + "✓" + theme.ResetTag()
 		}
 
 		// Truncate description
@@ -219,10 +247,10 @@ func (sv *SearchView) renderResults() {
 		}
 
 		sv.Table.SetCell(row, 0, tview.NewTableCell(badge))
-		sv.Table.SetCell(row, 1, tview.NewTableCell(result.Name).SetExpansion(1))
-		sv.Table.SetCell(row, 2, tview.NewTableCell(desc).SetExpansion(1).SetTextColor(tcell.ColorGray))
-		sv.Table.SetCell(row, 3, tview.NewTableCell(fmt.Sprintf("%d", result.StarCount)))
-		sv.Table.SetCell(row, 4, tview.NewTableCell(registry.FormatPullCount(result.PullCount)))
+		sv.Table.SetCell(row, 1, tview.NewTableCell(result.Name).SetExpansion(1).SetTextColor(theme.TextColor()))
+		sv.Table.SetCell(row, 2, tview.NewTableCell(desc).SetExpansion(1).SetTextColor(theme.DescriptionColor()))
+		sv.Table.SetCell(row, 3, tview.NewTableCell(fmt.Sprintf("%d", result.StarCount)).SetTextColor(theme.TextColor()))
+		sv.Table.SetCell(row, 4, tview.NewTableCell(registry.FormatPullCount(result.PullCount)).SetTextColor(theme.TextColor()))
 	}
 
 	if len(sv.results) > 0 {
