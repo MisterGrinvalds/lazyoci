@@ -1,0 +1,179 @@
+name: 'lazyoci build'
+description: 'Build and push OCI artifacts using lazyoci with automatic semver detection'
+author: 'mistergrinvalds'
+
+branding:
+  icon: 'package'
+  color: 'green'
+
+inputs:
+  tag:
+    description: >
+      Tag value for {{ .Tag }} template variable. If not set, auto-detected
+      from GITHUB_REF_NAME on tag push events. Also populates {{ .Version }}
+      fields when the tag is a valid semver.
+    required: false
+    default: ''
+  version:
+    description: >
+      Explicit version override for {{ .Version }} template variables.
+      Skips git tag auto-detection. Useful for manual dispatch workflows.
+    required: false
+    default: ''
+  push:
+    description: 'Push artifacts to registries after building'
+    required: false
+    default: 'true'
+  artifact:
+    description: 'Build only a specific artifact by name, type, or index'
+    required: false
+    default: ''
+  platform:
+    description: 'Comma-separated list of platforms for image builds (e.g., "linux/amd64,linux/arm64")'
+    required: false
+    default: ''
+  config:
+    description: 'Path to .lazy config file or directory'
+    required: false
+    default: ''
+  insecure:
+    description: 'Allow HTTP for push targets'
+    required: false
+    default: 'false'
+  dry-run:
+    description: 'Show what would be built/pushed without doing it'
+    required: false
+    default: 'false'
+  lazyoci-version:
+    description: 'Version of lazyoci to install (e.g., "v0.1.0", "latest")'
+    required: false
+    default: 'latest'
+
+outputs:
+  references:
+    description: 'Newline-separated list of pushed references (registry/repo:tag)'
+    value: ${{ steps.build.outputs.references }}
+  digests:
+    description: 'Newline-separated list of manifest digests'
+    value: ${{ steps.build.outputs.digests }}
+  result:
+    description: 'Full JSON build result'
+    value: ${{ steps.build.outputs.result }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install lazyoci
+      shell: bash
+      env:
+        LAZYOCI_INSTALL_VERSION: ${{ inputs.lazyoci-version }}
+      run: |
+        set -euo pipefail
+
+        # Determine version to install
+        VERSION="${LAZYOCI_INSTALL_VERSION}"
+        if [ "$VERSION" = "latest" ]; then
+          VERSION=$(gh release view --repo mistergrinvalds/lazyoci --json tagName -q '.tagName' 2>/dev/null || echo "")
+          if [ -z "$VERSION" ]; then
+            echo "::error::Could not determine latest lazyoci version. Set lazyoci-version input explicitly."
+            exit 1
+          fi
+        fi
+
+        # Determine OS and arch
+        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+        ARCH=$(uname -m)
+        case "$ARCH" in
+          x86_64)  ARCH="amd64" ;;
+          aarch64) ARCH="arm64" ;;
+          arm64)   ARCH="arm64" ;;
+        esac
+
+        BINARY_NAME="lazyoci_${OS}_${ARCH}"
+        DOWNLOAD_URL="https://github.com/mistergrinvalds/lazyoci/releases/download/${VERSION}/${BINARY_NAME}"
+
+        echo "Installing lazyoci ${VERSION} (${OS}/${ARCH})..."
+
+        # Download and install
+        curl -fsSL "$DOWNLOAD_URL" -o /usr/local/bin/lazyoci || {
+          echo "::warning::Binary download failed. Building from source..."
+          go install github.com/mistergrinvalds/lazyoci/cmd/lazyoci@${VERSION}
+        }
+        chmod +x /usr/local/bin/lazyoci 2>/dev/null || true
+
+        echo "lazyoci installed: $(lazyoci --version 2>/dev/null || echo 'version unknown')"
+
+    - name: Build and push
+      id: build
+      shell: bash
+      env:
+        # Resolve tag: explicit input > GITHUB_REF_NAME on tag events > empty
+        LAZYOCI_TAG: ${{ inputs.tag || (github.ref_type == 'tag' && github.ref_name) || '' }}
+        LAZYOCI_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+
+        # Build the flags array
+        FLAGS=()
+
+        if [ -n "$LAZYOCI_TAG" ]; then
+          FLAGS+=(--tag "$LAZYOCI_TAG")
+        fi
+
+        if [ "${{ inputs.push }}" = "false" ]; then
+          FLAGS+=(--no-push)
+        fi
+
+        if [ -n "${{ inputs.artifact }}" ]; then
+          FLAGS+=(--artifact "${{ inputs.artifact }}")
+        fi
+
+        if [ -n "${{ inputs.platform }}" ]; then
+          IFS=',' read -ra PLATFORMS <<< "${{ inputs.platform }}"
+          for p in "${PLATFORMS[@]}"; do
+            FLAGS+=(--platform "$(echo "$p" | xargs)")
+          done
+        fi
+
+        if [ "${{ inputs.insecure }}" = "true" ]; then
+          FLAGS+=(--insecure)
+        fi
+
+        if [ "${{ inputs.dry-run }}" = "true" ]; then
+          FLAGS+=(--dry-run)
+        fi
+
+        # Determine config path
+        CONFIG_PATH="${{ inputs.config }}"
+
+        # Run lazyoci build
+        echo "Running: lazyoci build ${CONFIG_PATH} ${FLAGS[*]:-} -o json"
+        RESULT=$(lazyoci build ${CONFIG_PATH} "${FLAGS[@]}" -o json 2>&1 | tee /dev/stderr | tail -1)
+
+        # Parse outputs from JSON result
+        echo "result<<EOF" >> "$GITHUB_OUTPUT"
+        echo "$RESULT" >> "$GITHUB_OUTPUT"
+        echo "EOF" >> "$GITHUB_OUTPUT"
+
+        # Extract references and digests
+        REFERENCES=$(echo "$RESULT" | jq -r '.[].targets[]?.reference // empty' 2>/dev/null || echo "")
+        DIGESTS=$(echo "$RESULT" | jq -r '.[].targets[]?.digest // empty' 2>/dev/null || echo "")
+
+        echo "references<<EOF" >> "$GITHUB_OUTPUT"
+        echo "$REFERENCES" >> "$GITHUB_OUTPUT"
+        echo "EOF" >> "$GITHUB_OUTPUT"
+
+        echo "digests<<EOF" >> "$GITHUB_OUTPUT"
+        echo "$DIGESTS" >> "$GITHUB_OUTPUT"
+        echo "EOF" >> "$GITHUB_OUTPUT"
+
+        # Summary
+        echo "### lazyoci build results" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        if [ -n "$LAZYOCI_TAG" ]; then
+          echo "**Tag:** \`${LAZYOCI_TAG}\`" >> "$GITHUB_STEP_SUMMARY"
+        fi
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo '```json' >> "$GITHUB_STEP_SUMMARY"
+        echo "$RESULT" | jq '.' >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "$RESULT" >> "$GITHUB_STEP_SUMMARY"
+        echo '```' >> "$GITHUB_STEP_SUMMARY"

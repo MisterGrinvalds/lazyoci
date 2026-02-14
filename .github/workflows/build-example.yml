@@ -1,0 +1,81 @@
+# Example workflow: Build and push OCI artifacts on tag push
+#
+# This workflow demonstrates how to use lazyoci in GitHub Actions.
+# It triggers on semver tag pushes and uses the lazyoci action to build
+# and push all artifacts defined in .lazy.
+#
+# Template variables are auto-populated:
+#   {{ .Tag }}          -> "v1.2.3" (from git tag)
+#   {{ .Version }}      -> "1.2.3"  (semver, v-prefix stripped)
+#   {{ .VersionMajor }} -> "1"
+#   {{ .VersionMinor }} -> "2"
+#   {{ .VersionPatch }} -> "3"
+#   {{ .GitSHA }}       -> "abc1234" (short commit SHA)
+#   {{ .GitBranch }}    -> "" (empty on tag checkout)
+
+name: Build and Push
+
+on:
+  push:
+    tags: ['v*']
+
+  # Allow manual trigger with version input
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag/version to build (e.g., v1.2.3)'
+        required: true
+        type: string
+
+# Required for pushing to GHCR
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git describe
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      # Login to registries before building
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build and push all artifacts from .lazy
+      - name: Build and push
+        uses: ./  # or: mistergrinvalds/lazyoci@v1
+        id: build
+        with:
+          tag: ${{ github.event.inputs.tag || github.ref_name }}
+          push: true
+
+      # Use outputs from the build step
+      - name: Print results
+        run: |
+          echo "References:"
+          echo "${{ steps.build.outputs.references }}"
+          echo ""
+          echo "Digests:"
+          echo "${{ steps.build.outputs.digests }}"
+
+  # Example: Build without pushing (e.g., for PRs)
+  # build-check:
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'pull_request'
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: ./
+  #       with:
+  #         push: false
+  #         dry-run: true
