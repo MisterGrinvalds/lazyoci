@@ -41,6 +41,9 @@ config.local.yaml
 .claude/
 .opencode/
 
+# Generated completions (goreleaser before.hooks / make install-completions)
+completions/
+
 # Docusaurus build artifacts
 docs/node_modules/
 docs/build/

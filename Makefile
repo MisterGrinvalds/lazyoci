@@ -1,4 +1,4 @@
-.PHONY: build run test clean install lint fmt help \
+.PHONY: build run test clean install install-completions uninstall lint fmt help \
 	registry-up registry-down registry-logs registry-push-test \
 	push-image push-helm push-sbom-spdx push-sbom-cyclonedx \
 	push-signature push-attestation push-wasm registry-push-all \
@@ -9,6 +9,7 @@
 BINARY_NAME := lazyoci
 BUILD_DIR := bin
 MAIN_PATH := ./cmd/lazyoci
+PREFIX ?= /usr/local
 
 # Go variables
 GOFLAGS := -ldflags="-s -w"
@@ -54,11 +55,35 @@ fmt:
 ## clean: Clean build artifacts
 clean:
 	rm -rf $(BUILD_DIR)
+	rm -rf completions
 	rm -f coverage.out coverage.html
 
-## install: Install the binary
+## install: Install the binary to PREFIX/bin (default /usr/local/bin)
 install: build
-	cp $(BUILD_DIR)/$(BINARY_NAME) $(GOPATH)/bin/
+	install -d $(PREFIX)/bin
+	install -m 755 $(BUILD_DIR)/$(BINARY_NAME) $(PREFIX)/bin/$(BINARY_NAME)
+
+## install-completions: Generate and install shell completions
+install-completions: build
+	@echo "Generating shell completions..."
+	@mkdir -p completions
+	$(BUILD_DIR)/$(BINARY_NAME) completion bash > completions/$(BINARY_NAME).bash
+	$(BUILD_DIR)/$(BINARY_NAME) completion zsh > completions/_$(BINARY_NAME)
+	$(BUILD_DIR)/$(BINARY_NAME) completion fish > completions/$(BINARY_NAME).fish
+	install -d $(PREFIX)/share/bash-completion/completions
+	install -m 644 completions/$(BINARY_NAME).bash $(PREFIX)/share/bash-completion/completions/$(BINARY_NAME)
+	install -d $(PREFIX)/share/zsh/site-functions
+	install -m 644 completions/_$(BINARY_NAME) $(PREFIX)/share/zsh/site-functions/_$(BINARY_NAME)
+	install -d $(PREFIX)/share/fish/completions
+	install -m 644 completions/$(BINARY_NAME).fish $(PREFIX)/share/fish/completions/$(BINARY_NAME).fish
+	@echo "Shell completions installed to $(PREFIX)/share/"
+
+## uninstall: Remove binary and completions from PREFIX
+uninstall:
+	rm -f $(PREFIX)/bin/$(BINARY_NAME)
+	rm -f $(PREFIX)/share/bash-completion/completions/$(BINARY_NAME)
+	rm -f $(PREFIX)/share/zsh/site-functions/_$(BINARY_NAME)
+	rm -f $(PREFIX)/share/fish/completions/$(BINARY_NAME).fish
 
 ## deps: Download dependencies
 deps:
