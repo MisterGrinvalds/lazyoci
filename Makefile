@@ -3,7 +3,8 @@
 	push-image push-helm push-sbom-spdx push-sbom-cyclonedx \
 	push-signature push-attestation push-wasm registry-push-all \
 	test-registry test-config test-cache test-pull test-artifacts test-build test-all \
-	docs-install docs-dev docs-build docs-serve
+	docs-install docs-dev docs-build docs-serve \
+	release-token release-test release-dry-run
 
 # Build variables
 BINARY_NAME := lazyoci
@@ -282,3 +283,54 @@ docs-build: docs-install
 ## docs-serve: Serve production build locally
 docs-serve: docs-build
 	cd docs && $(DOCS_NODE_FLAGS) pnpm run serve
+
+# ---------------------------------------------------------------------------
+# Release
+# ---------------------------------------------------------------------------
+# Requires: gh CLI (brew install gh), goreleaser (brew install goreleaser)
+
+RELEASE_VERSION ?= v0.1.0
+
+## release-token: Print gh CLI token and verify access to tap repos
+release-token:
+	@command -v gh >/dev/null 2>&1 || { echo "gh CLI required: brew install gh"; exit 1; }
+	@echo "HOMEBREW_TAP_GITHUB_TOKEN:"
+	@echo ""
+	@gh auth token
+	@echo ""
+	@echo "Set this as a repo secret:"
+	@echo "  gh secret set HOMEBREW_TAP_GITHUB_TOKEN --repo mistergrinvalds/lazyoci"
+	@echo ""
+	@echo "Verifying token has access to tap repos..."
+	@gh api repos/greenforests-studio/homebrew-tap --jq '.full_name' && echo "  homebrew-tap: OK" || echo "  homebrew-tap: FAILED -- check gh auth scope"
+	@gh api repos/greenforests-studio/scoop-bucket --jq '.full_name' && echo "  scoop-bucket: OK" || echo "  scoop-bucket: FAILED -- check gh auth scope"
+
+## release-dry-run: Run goreleaser locally without publishing
+release-dry-run: build
+	@command -v goreleaser >/dev/null 2>&1 || { echo "goreleaser required: brew install goreleaser"; exit 1; }
+	HOMEBREW_TAP_GITHUB_TOKEN=dry-run goreleaser release --snapshot --clean --skip=publish
+
+## release-test: Push all commits, tag RELEASE_VERSION, and trigger the release workflow
+release-test:
+	@echo "==> Pre-flight checks"
+	@command -v gh >/dev/null 2>&1 || { echo "gh CLI required: brew install gh"; exit 1; }
+	@git diff --quiet || { echo "error: working tree is dirty -- commit or stash first"; exit 1; }
+	@git diff --cached --quiet || { echo "error: staged changes exist -- commit first"; exit 1; }
+	@gh secret list --repo mistergrinvalds/lazyoci | grep -q HOMEBREW_TAP_GITHUB_TOKEN || \
+		{ echo "error: HOMEBREW_TAP_GITHUB_TOKEN secret not set -- run: make release-token"; exit 1; }
+	@echo ""
+	@echo "==> Pushing commits to origin..."
+	git push origin main
+	@echo ""
+	@echo "==> Tagging $(RELEASE_VERSION)..."
+	git tag -a $(RELEASE_VERSION) -m "Release $(RELEASE_VERSION)"
+	git push origin $(RELEASE_VERSION)
+	@echo ""
+	@echo "==> Release workflow triggered!"
+	@echo "    Watch: gh run watch -R mistergrinvalds/lazyoci"
+	@echo "    Or:    https://github.com/mistergrinvalds/lazyoci/actions"
+	@echo ""
+	@echo "    After the run completes, verify:"
+	@echo "      gh release view $(RELEASE_VERSION) -R mistergrinvalds/lazyoci"
+	@echo "      brew install greenforests-studio/tap/lazyoci"
+	@echo "      scoop bucket add greenforests https://github.com/greenforests-studio/scoop-bucket && scoop install lazyoci"
