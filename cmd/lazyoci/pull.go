@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/mistergrinvalds/lazyoci/pkg/config"
+	"github.com/mistergrinvalds/lazyoci/pkg/ociutil"
 	"github.com/mistergrinvalds/lazyoci/pkg/pull"
 	"github.com/mistergrinvalds/lazyoci/pkg/registry"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
@@ -67,7 +68,7 @@ Examples:
 		}
 
 		// Parse the reference to get registry
-		ref, err := pull.ParseReference(reference)
+		ref, err := ociutil.ParseReference(reference)
 		if err != nil {
 			return fmt.Errorf("invalid reference: %w", err)
 		}
