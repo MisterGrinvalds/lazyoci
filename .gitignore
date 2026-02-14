@@ -33,3 +33,15 @@ tmp/
 
 # Local config
 config.local.yaml
+
+# Temp fixtures (Makefile push targets)
+.tmp-fixtures/
+
+# Editor/AI tool configs
+.claude/
+.opencode/
+
+# Docusaurus build artifacts
+docs/node_modules/
+docs/build/
+docs/.docusaurus/
