@@ -57,6 +57,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "text", "Output format: text, json, yaml")
 	rootCmd.PersistentFlags().StringVar(&artifactDir, "artifact-dir", "", "Override artifact storage directory")
 	rootCmd.PersistentFlags().StringVar(&themeName, "theme", "", "Color theme (default, catppuccin-mocha, catppuccin-latte, dracula, tokyonight, gruvbox, solarized-dark)")
+
+	// Set version for --version flag (version var is in version.go, set via ldflags)
+	rootCmd.Version = version
 }
 
 func Execute() {

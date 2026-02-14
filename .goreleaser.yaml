@@ -1,0 +1,90 @@
+version: 2
+
+project_name: lazyoci
+
+before:
+  hooks:
+    - go mod tidy
+    - mkdir -p completions
+    - sh -c "go run ./cmd/lazyoci completion bash > completions/lazyoci.bash"
+    - sh -c "go run ./cmd/lazyoci completion zsh > completions/_lazyoci"
+    - sh -c "go run ./cmd/lazyoci completion fish > completions/lazyoci.fish"
+
+builds:
+  - id: lazyoci
+    binary: lazyoci
+    main: ./cmd/lazyoci
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.ShortCommit}}
+      - -X main.date={{.Date}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+
+archives:
+  - id: lazyoci
+    builds: [lazyoci]
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+    files:
+      - completions/*
+      - README.md
+      - LICENSE
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+brews:
+  - name: lazyoci
+    ids: [lazyoci]
+    repository:
+      owner: greenforests-studio
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/mistergrinvalds/lazyoci"
+    description: "Terminal UI for browsing, building, and pushing OCI container registries"
+    license: "MIT"
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+    install: |
+      bin.install "lazyoci"
+      bash_completion.install "completions/lazyoci.bash" => "lazyoci"
+      zsh_completion.install "completions/_lazyoci"
+      fish_completion.install "completions/lazyoci.fish"
+    test: |
+      system "#{bin}/lazyoci", "version"
+
+scoops:
+  - name: lazyoci
+    ids: [lazyoci]
+    repository:
+      owner: greenforests-studio
+      name: scoop-bucket
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    homepage: "https://github.com/mistergrinvalds/lazyoci"
+    description: "Terminal UI for browsing, building, and pushing OCI container registries"
+    license: MIT
+    commit_msg_template: "Scoop update for {{ .ProjectName }} version {{ .Tag }}"
