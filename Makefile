@@ -240,7 +240,7 @@ test-all:
 
 ## docs-install: Install documentation dependencies
 docs-install:
-	cd docs && npm install
+	cd docs && pnpm install
 
 # Suppress Node.js deprecation warning from Docusaurus/webpack internals (DEP0169).
 # This is not in our code; it will be resolved in a future Docusaurus release.
@@ -248,12 +248,12 @@ DOCS_NODE_FLAGS := NODE_OPTIONS=--no-deprecation
 
 ## docs-dev: Start documentation dev server with hot reload
 docs-dev: docs-install
-	cd docs && $(DOCS_NODE_FLAGS) npm start
+	cd docs && $(DOCS_NODE_FLAGS) pnpm start
 
 ## docs-build: Build documentation for production
 docs-build: docs-install
-	cd docs && $(DOCS_NODE_FLAGS) npm run build
+	cd docs && $(DOCS_NODE_FLAGS) pnpm run build
 
 ## docs-serve: Serve production build locally
 docs-serve: docs-build
-	cd docs && $(DOCS_NODE_FLAGS) npm run serve
+	cd docs && $(DOCS_NODE_FLAGS) pnpm run serve
