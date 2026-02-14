@@ -33,5 +33,15 @@ module.exports = {
         'local-dev/artifact-types',
       ],
     },
+    {
+      type: 'category',
+      label: 'Building Artifacts',
+      link: {type: 'doc', id: 'building/index'},
+      items: [
+        'building/first-build',
+        'building/helm-chart',
+        'building/tag-templates',
+      ],
+    },
   ],
 };

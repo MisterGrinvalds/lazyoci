@@ -34,6 +34,15 @@ Set up a local development environment with a test registry for experimenting wi
 - **Time estimate**: 15 minutes
 - **Prerequisites**: Docker installed
 
+## Building and Pushing Artifacts
+
+Learn how to build container images, Helm charts, and generic OCI artifacts using the `.lazy` config format and push them to registries.
+
+### [Building Artifacts](./building/)
+- **What you'll learn**: Create `.lazy` configs, build different artifact types, use tag templates, and push to registries
+- **Time estimate**: 20 minutes
+- **Prerequisites**: Docker installed, a registry to push to (local or remote)
+
 ---
 
 Each tutorial follows a learning-oriented approach where we work together to accomplish real tasks. Let's get started!

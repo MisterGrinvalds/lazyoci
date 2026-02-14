@@ -7,5 +7,6 @@ module.exports = {
     'artifact-type-detection',
     'credential-chain',
     'docker-load-conversion',
+    'build-system',
   ],
 };

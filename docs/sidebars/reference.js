@@ -9,11 +9,13 @@ module.exports = {
       link: {type: 'doc', id: 'cli/index'},
       items: [
         'cli/pull',
+        'cli/build',
         'cli/browse',
         'cli/registry',
         'cli/config',
       ],
     },
+    'lazy-config',
     'tui-keybindings',
     'configuration',
     'environment-variables',

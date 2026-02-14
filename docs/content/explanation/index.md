@@ -24,6 +24,9 @@ Modern credential management involves trying multiple sources in a specific orde
 ### [Docker Load Conversion](./docker-load-conversion.md)
 Two different but related standards—OCI Image Layout and Docker's save format—solve similar problems in incompatible ways. This explanation covers why the conversion is necessary and how lazyoci handles the complexity.
 
+### [Build System Architecture](./build-system.md)
+The build system uses OCI layout as an intermediate format to unify four different artifact types—container images, Helm charts, generic artifacts, and Docker images—into a single pipeline. This explanation covers the design philosophy, why buildx is used for images, and how oras-go handles the push.
+
 ## Perspective on Design
 
 lazyoci embodies a particular philosophy: **leverage existing standards and tools** rather than reinventing them. This means understanding and working with Docker's credential system, OCI specifications, and established tools like skopeo. The result is a tool that integrates naturally into existing container workflows while providing new capabilities.

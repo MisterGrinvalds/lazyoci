@@ -11,9 +11,14 @@ Complete reference documentation for lazyoci components and interfaces.
 
 - [CLI Overview](./cli/)
 - [pull](./cli/pull)
+- [build](./cli/build)
 - [browse](./cli/browse)
 - [registry](./cli/registry)
 - [config](./cli/config)
+
+## Build Configuration
+
+- [`.lazy` Config File](./lazy-config)
 
 ## TUI Interface
 

@@ -24,6 +24,7 @@ Launches TUI when no subcommand specified.
 ```
 lazyoci
 ├── pull <reference>
+├── build [path]
 ├── browse
 │   ├── repos <registry-url>
 │   ├── tags <registry/repo>
@@ -46,6 +47,7 @@ lazyoci
 | Command | Arguments | Type |
 |---------|-----------|------|
 | `pull` | `<reference>` | ExactArgs(1) |
+| `build` | `[path]` | MaximumNArgs(1) |
 | `browse repos` | `<registry-url>` | ExactArgs(1) |
 | `browse tags` | `<registry/repo>` | ExactArgs(1) |
 | `browse manifest` | `<registry/repo:tag>` | ExactArgs(1) |

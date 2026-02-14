@@ -10,6 +10,7 @@ Browse Docker Hub, Quay.io, GitHub Packages, and custom registries to discover c
 - **Multi-registry support** -- Docker Hub, Quay.io, GHCR, Harbor, DigitalOcean, and any OCI-compliant registry
 - **Artifact type detection** -- automatically identifies images, Helm charts, SBOMs, signatures, attestations, and WASM modules
 - **Pull artifacts** -- download to local OCI layout or load directly into Docker
+- **Build and push** -- build container images, package Helm charts, and push OCI artifacts from a `.lazy` config file
 - **Docker credential integration** -- reads credentials from Docker Desktop, credential helpers, and `~/.docker/config.json`
 - **Search** -- find repositories across registries
 - **CLI commands** -- scriptable interface with JSON/YAML output
@@ -41,6 +42,9 @@ lazyoci --theme catppuccin-mocha
 
 # Pull an image and load it into Docker
 lazyoci pull nginx:latest --docker
+
+# Build and push artifacts from a .lazy config
+lazyoci build --tag v1.0.0
 
 # Search Docker Hub
 lazyoci browse search docker.io nginx
@@ -107,6 +111,60 @@ lazyoci pull nginx:latest --dest ~/my-artifacts
 # JSON output
 lazyoci pull nginx:latest -q -o json
 ```
+
+### Build & Push Artifacts
+
+```bash
+# Build all artifacts defined in .lazy
+lazyoci build --tag v1.0.0
+
+# Dry run -- preview what would be built and pushed
+lazyoci build --tag v1.0.0 --dry-run
+
+# Build from a specific config file
+lazyoci build --file path/to/.lazy --tag v1.0.0
+
+# Build only, don't push to registries
+lazyoci build --tag v1.0.0 --no-push
+
+# Build a specific artifact by name
+lazyoci build --tag v1.0.0 --artifact myapp
+
+# JSON output
+lazyoci build --tag v1.0.0 -o json
+```
+
+The `.lazy` config file (YAML) defines artifacts to build and push:
+
+```yaml
+version: 1
+artifacts:
+  - type: image
+    name: myapp
+    dockerfile: Dockerfile
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    targets:
+      - registry: ghcr.io/owner/myapp
+        tags:
+          - "{{ .Tag }}"
+          - "{{ .GitSHA }}"
+          - latest
+```
+
+Four artifact types are supported:
+
+| Type | Description |
+|------|-------------|
+| `image` | Build container image from Dockerfile (via `docker buildx`) |
+| `helm` | Package Helm chart directory as OCI artifact |
+| `artifact` | Package generic files with custom media types |
+| `docker` | Push existing Docker daemon image to a registry |
+
+Tag templates support `{{ .Tag }}`, `{{ .GitSHA }}`, `{{ .GitBranch }}`, `{{ .ChartVersion }}`, and `{{ .Timestamp }}`.
+
+See [`examples/`](examples/) for complete examples of each artifact type.
 
 ### Manage Registries
 

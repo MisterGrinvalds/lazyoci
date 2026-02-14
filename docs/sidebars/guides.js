@@ -24,6 +24,16 @@ module.exports = {
     },
     {
       type: 'category',
+      label: 'Building & Pushing',
+      collapsed: false,
+      items: [
+        'building-artifacts',
+        'pushing-to-registries',
+        'ci-cd-github-actions',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Troubleshooting',
       collapsed: false,
       items: [
