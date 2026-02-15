@@ -366,6 +366,10 @@ func RenderTags(targets []Target, vars *TemplateVars) ([]Target, error) {
 		if err != nil {
 			return nil, fmt.Errorf("target[%d].registry: failed to render %q: %w", i, t.Registry, err)
 		}
+		// Catch empty {{ .Registry }} — results in a leading "/" which is invalid
+		if strings.HasPrefix(reg, "/") {
+			return nil, fmt.Errorf("target[%d].registry: rendered to %q — set LAZYOCI_REGISTRY env var (e.g. LAZYOCI_REGISTRY=localhost:5050)", i, reg)
+		}
 		rendered[i] = Target{
 			Registry: reg,
 			Tags:     make([]string, len(t.Tags)),
