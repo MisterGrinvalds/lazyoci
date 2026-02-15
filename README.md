@@ -326,6 +326,7 @@ GHCR doesn't support the catalog API; use `browse tags` with known repository pa
 | Variable | Description |
 |----------|-------------|
 | `LAZYOCI_ARTIFACT_DIR` | Override artifact storage directory |
+| `LAZYOCI_REGISTRY` | Base registry URL for `{{ .Registry }}` in `.lazy` configs |
 | `LAZYOCI_TAG` | Default value for `--tag` in `lazyoci build` |
 | `LAZYOCI_VERSION` | Override version for semver template variables |
 | `XDG_CONFIG_HOME` | Override config directory (default `~/.config`) |

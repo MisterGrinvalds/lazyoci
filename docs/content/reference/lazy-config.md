@@ -146,7 +146,30 @@ The image is exported via `docker save`, converted from Docker save format to OC
 
 ## Template Variables
 
-Tag values support Go template syntax. Variables are resolved at build time.
+Tag values and registry URLs support Go template syntax. Variables are resolved at build time.
+
+### Registry variable
+
+| Variable | Source | Example |
+|----------|--------|---------|
+| `{{ .Registry }}` | `LAZYOCI_REGISTRY` env var | `localhost:5050` |
+
+Use `{{ .Registry }}` in the `registry` field to make `.lazy` configs portable across environments:
+
+```yaml
+targets:
+  - registry: "{{ .Registry }}/myapp"
+    tags:
+      - "{{ .Version }}"
+```
+
+```bash
+# Local dev
+LAZYOCI_REGISTRY=localhost:5050 lazyoci build --tag v1.0.0 --insecure
+
+# Production (DigitalOcean)
+LAZYOCI_REGISTRY=registry.digitalocean.com/greenforests lazyoci build --tag v1.0.0
+```
 
 ### General variables
 
@@ -220,6 +243,23 @@ targets:
 ```
 
 The `registry` field is the full repository path excluding the tag. Each tag is pushed as a separate reference.
+
+The `registry` field supports template variables, making configs portable across environments:
+
+```yaml
+targets:
+  - registry: "{{ .Registry }}/myapp"
+    tags:
+      - "{{ .Version }}"
+      - latest
+```
+
+Set `LAZYOCI_REGISTRY` to control where artifacts are pushed:
+
+```bash
+LAZYOCI_REGISTRY=localhost:5050 lazyoci build --tag v1.0.0 --insecure    # local dev
+LAZYOCI_REGISTRY=registry.digitalocean.com/team lazyoci build --tag v1.0.0  # production
+```
 
 ## Path Resolution
 

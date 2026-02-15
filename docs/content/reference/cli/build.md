@@ -56,10 +56,11 @@ If a directory is given, lazyoci looks for `.lazy` inside it.
 
 ## Template Variables
 
-Tag values in the `.lazy` file support Go template syntax:
+Tag values and registry URLs in the `.lazy` file support Go template syntax:
 
 | Variable | Source | Example |
 |----------|--------|---------|
+| `{{ .Registry }}` | `LAZYOCI_REGISTRY` env var | `localhost:5050` |
 | `{{ .Tag }}` | `--tag` flag or `LAZYOCI_TAG` env var | `v1.0.0` |
 | `{{ .GitSHA }}` | `git rev-parse --short HEAD` | `e5bce6f` |
 | `{{ .GitBranch }}` | `git branch --show-current` | `main` |
@@ -88,6 +89,7 @@ If not a valid semver, only `{{ .Version }}` and `{{ .VersionRaw }}` are set.
 
 | Variable | Fallback for | Description |
 |----------|--------------|-------------|
+| `LAZYOCI_REGISTRY` | (none) | Base registry URL for `{{ .Registry }}` in `.lazy` configs |
 | `LAZYOCI_TAG` | `--tag` flag | Sets `{{ .Tag }}` when `--tag` is not specified |
 | `LAZYOCI_VERSION` | Git tag detection | Overrides `{{ .Version }}` and all semver components |
 
@@ -140,6 +142,12 @@ LAZYOCI_TAG=v1.2.3 lazyoci build
 
 # CI: explicit version override
 LAZYOCI_VERSION=1.2.3 lazyoci build
+
+# Build against local dev registry
+LAZYOCI_REGISTRY=localhost:5050 lazyoci build --tag v1.0.0 --insecure
+
+# Build against DigitalOcean registry
+LAZYOCI_REGISTRY=registry.digitalocean.com/greenforests lazyoci build --tag v1.0.0
 ```
 
 ## Output
