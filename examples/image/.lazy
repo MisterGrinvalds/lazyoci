@@ -10,7 +10,7 @@ artifacts:
     buildArgs:
       GO_VERSION: "1.23"
     targets:
-      - registry: registry.digitalocean.com/greenforests/examples/hello-server
+      - registry: "{{ .Registry }}/examples/hello-server"
         tags:
           - "{{ .Version }}"
           - "{{ .VersionMajorMinor }}"

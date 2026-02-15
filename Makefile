@@ -4,7 +4,8 @@
 	push-signature push-attestation push-wasm registry-push-all \
 	test-registry test-config test-cache test-pull test-artifacts test-build test-all \
 	docs-install docs-dev docs-build docs-serve \
-	release-token release-test release-dry-run
+	release-token release-test release-dry-run \
+	build-local build-docr
 
 # Build variables
 BINARY_NAME := lazyoci
@@ -259,6 +260,20 @@ test-build:
 ## test-all: Run all unit tests with race detection
 test-all:
 	go test -v -race -count=1 ./...
+
+# ---------------------------------------------------------------------------
+# Example Builds (dry-run against local or DigitalOcean registry)
+# ---------------------------------------------------------------------------
+
+## build-local: Dry-run build examples against local registry (localhost:5050)
+build-local: build
+	LAZYOCI_REGISTRY=localhost:5050 $(BUILD_DIR)/$(BINARY_NAME) build \
+		--file examples/multi/.lazy --tag v0.1.0-test --insecure --dry-run
+
+## build-docr: Dry-run build examples against DigitalOcean registry
+build-docr: build
+	LAZYOCI_REGISTRY=registry.digitalocean.com/greenforests $(BUILD_DIR)/$(BINARY_NAME) build \
+		--file examples/multi/.lazy --tag v0.1.0-test --dry-run
 
 # ---------------------------------------------------------------------------
 # Documentation (Docusaurus)

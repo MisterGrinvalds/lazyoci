@@ -9,7 +9,7 @@ artifacts:
       - path: policy.rego
         mediaType: application/vnd.openpolicyagent.policy.layer.v1+rego
     targets:
-      - registry: localhost:5050/examples/app-config
+      - registry: "{{ .Registry }}/examples/app-config"
         tags:
           - "{{ .Version }}"
           - "{{ .GitSHA }}"

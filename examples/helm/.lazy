@@ -4,7 +4,7 @@ artifacts:
     name: mychart
     chartPath: mychart
     targets:
-      - registry: localhost:5050/examples/charts/mychart
+      - registry: "{{ .Registry }}/examples/charts/mychart"
         tags:
           - "{{ .ChartVersion }}"
           - latest

@@ -4,7 +4,7 @@ artifacts:
     name: local-nginx
     image: nginx:alpine
     targets:
-      - registry: localhost:5050/examples/nginx-mirror
+      - registry: "{{ .Registry }}/examples/nginx-mirror"
         tags:
           - "{{ .Version }}"
           - latest

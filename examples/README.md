@@ -4,11 +4,24 @@ Each subdirectory demonstrates building and pushing a different type of OCI arti
 
 ## Prerequisites
 
-Start the local development registry (used by all examples):
+All examples use `{{ .Registry }}` in their `.lazy` configs, so you must set `LAZYOCI_REGISTRY` before running them.
+
+### Local development
+
+Start the local development registry and set the env var:
 
 ```sh
 make registry-up   # starts localhost:5050
+export LAZYOCI_REGISTRY=localhost:5050
 ```
+
+### DigitalOcean Container Registry
+
+```sh
+export LAZYOCI_REGISTRY=registry.digitalocean.com/greenforests
+```
+
+Authenticate first via `docker login registry.digitalocean.com` or configure Docker credential helpers.
 
 ## Examples
 
@@ -56,12 +69,29 @@ lazyoci build examples/multi --tag v1.0.0 --artifact api-chart  # helm chart onl
 lazyoci build examples/multi --tag v1.0.0 --dry-run -o json     # preview as JSON
 ```
 
+## Quick test (local registry)
+
+```sh
+# Start registry, build, and verify
+make registry-up
+LAZYOCI_REGISTRY=localhost:5050 lazyoci build examples/artifact --tag v0.1.0 --insecure
+curl -s http://localhost:5050/v2/_catalog | python3 -m json.tool
+```
+
+Or use the Makefile convenience targets:
+
+```sh
+make build-local    # dry-run against localhost:5050
+make build-docr     # dry-run against DigitalOcean
+```
+
 ## Template variables
 
-All `.lazy` files support Go template syntax in tag values:
+All `.lazy` files support Go template syntax in both registry and tag fields:
 
 | Variable | Source | Example |
 |---|---|---|
+| `{{ .Registry }}` | `LAZYOCI_REGISTRY` env var | `localhost:5050` |
 | `{{ .Tag }}` | `--tag` flag or `LAZYOCI_TAG` env | `v1.0.0` |
 | `{{ .Version }}` | Semver from git tag (auto-detected) | `1.2.3` |
 | `{{ .VersionMajorMinor }}` | Major.Minor | `1.2` |
@@ -93,6 +123,7 @@ Version is auto-detected from git tags. Override with `LAZYOCI_VERSION` env var 
 ## Environment variables
 
 ```
+LAZYOCI_REGISTRY  Base registry URL for {{ .Registry }} in .lazy configs
 LAZYOCI_TAG       Fallback for --tag when not set on CLI
 LAZYOCI_VERSION   Override version detection (skips git describe)
 ```
