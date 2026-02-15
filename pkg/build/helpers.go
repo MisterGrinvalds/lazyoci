@@ -46,7 +46,9 @@ func (r *blobReader) Read(p []byte) (int, error) {
 }
 
 // exportToOCILayout copies a manifest and its content from a memory store to an OCI layout on disk.
-func exportToOCILayout(ctx context.Context, src content.ReadOnlyStorage, manifestDesc ocispec.Descriptor, destDir string) error {
+// The srcTag is the tag assigned to the manifest in the source store — oras memory
+// store requires resolving by tag, not by raw digest string.
+func exportToOCILayout(ctx context.Context, src content.ReadOnlyStorage, srcTag, destDir string) error {
 	store, err := oci.New(destDir)
 	if err != nil {
 		return fmt.Errorf("failed to create OCI store at %s: %w", destDir, err)
@@ -59,8 +61,8 @@ func exportToOCILayout(ctx context.Context, src content.ReadOnlyStorage, manifes
 		return fmt.Errorf("source storage does not implement ReadOnlyTarget")
 	}
 
-	// Copy the manifest and all referenced blobs
-	_, err = oras.Copy(ctx, srcTarget, manifestDesc.Digest.String(), store, "", oras.CopyOptions{})
+	// Copy the manifest and all referenced blobs using the tag reference.
+	_, err = oras.Copy(ctx, srcTarget, srcTag, store, srcTag, oras.CopyOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to copy to OCI layout: %w", err)
 	}

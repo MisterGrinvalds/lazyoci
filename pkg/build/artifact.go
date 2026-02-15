@@ -68,7 +68,7 @@ func (b *Builder) buildArtifact(ctx context.Context, artifact *Artifact) (string
 		return "", fmt.Errorf("failed to create temp dir: %w", err)
 	}
 
-	if err := exportToOCILayout(ctx, store, manifestDesc, tmpDir); err != nil {
+	if err := exportToOCILayout(ctx, store, tag, tmpDir); err != nil {
 		os.RemoveAll(tmpDir)
 		return "", fmt.Errorf("failed to export OCI layout: %w", err)
 	}

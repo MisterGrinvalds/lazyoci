@@ -110,7 +110,7 @@ func (b *Builder) buildHelm(ctx context.Context, artifact *Artifact, chartVersio
 		return "", fmt.Errorf("failed to create temp dir: %w", err)
 	}
 
-	if err := exportToOCILayout(ctx, store, manifestDesc, tmpDir); err != nil {
+	if err := exportToOCILayout(ctx, store, chartVersion, tmpDir); err != nil {
 		os.RemoveAll(tmpDir)
 		return "", fmt.Errorf("failed to export OCI layout: %w", err)
 	}
