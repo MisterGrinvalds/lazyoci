@@ -38,7 +38,8 @@ OCI registries. Supported artifact types:
   artifact  Package generic files as an OCI artifact with custom media types
   docker    Push an existing Docker daemon image to a registry
 
-Tag templates support variables:
+Template variables (usable in both registry and tag fields):
+  {{ .Registry }}          Base registry URL (from LAZYOCI_REGISTRY env var)
   {{ .Tag }}               Value of --tag flag (or LAZYOCI_TAG env var)
   {{ .GitSHA }}            Current git commit SHA (short)
   {{ .GitBranch }}         Current git branch name
@@ -56,6 +57,7 @@ Version auto-detection: {{ .Version }} is resolved automatically from git tags.
 Override with LAZYOCI_VERSION env var or by passing a semver to --tag.
 
 Environment variables:
+  LAZYOCI_REGISTRY  Base registry URL for {{ .Registry }} in .lazy configs
   LAZYOCI_TAG       Fallback for --tag when not set on CLI
   LAZYOCI_VERSION   Override version detection (skips git describe)
 
@@ -85,7 +87,13 @@ Examples:
   lazyoci build --tag v1.0.0 -o json
 
   # CI: use env vars instead of flags
-  LAZYOCI_TAG=v1.2.3 lazyoci build`,
+  LAZYOCI_TAG=v1.2.3 lazyoci build
+
+  # Build against local dev registry
+  LAZYOCI_REGISTRY=localhost:5050 lazyoci build --tag v1.0.0 --insecure
+
+  # Build against DigitalOcean registry
+  LAZYOCI_REGISTRY=registry.digitalocean.com/myteam lazyoci build --tag v1.0.0`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Determine config path

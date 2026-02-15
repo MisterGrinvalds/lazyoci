@@ -470,6 +470,79 @@ func TestApplyVersion(t *testing.T) {
 	}
 }
 
+func TestRenderTagsWithRegistryTemplate(t *testing.T) {
+	vars := &TemplateVars{
+		Registry: "registry.digitalocean.com/greenforests",
+		Tag:      "v1.0.0",
+		Version:  "1.0.0",
+	}
+
+	targets := []Target{
+		{
+			Registry: "{{ .Registry }}/examples/hello-server",
+			Tags:     []string{"{{ .Version }}", "latest"},
+		},
+	}
+
+	rendered, err := RenderTags(targets, vars)
+	if err != nil {
+		t.Fatalf("RenderTags() error = %v", err)
+	}
+
+	wantRegistry := "registry.digitalocean.com/greenforests/examples/hello-server"
+	if rendered[0].Registry != wantRegistry {
+		t.Errorf("rendered[0].Registry = %q, want %q", rendered[0].Registry, wantRegistry)
+	}
+	if rendered[0].Tags[0] != "1.0.0" {
+		t.Errorf("rendered[0].Tags[0] = %q, want %q", rendered[0].Tags[0], "1.0.0")
+	}
+	if rendered[0].Tags[1] != "latest" {
+		t.Errorf("rendered[0].Tags[1] = %q, want %q", rendered[0].Tags[1], "latest")
+	}
+}
+
+func TestRenderTagsHardcodedRegistryStillWorks(t *testing.T) {
+	// When Registry is empty, hardcoded registry URLs should pass through unchanged
+	vars := &TemplateVars{
+		Tag: "v1.0.0",
+	}
+
+	targets := []Target{
+		{
+			Registry: "ghcr.io/owner/myapp",
+			Tags:     []string{"{{ .Tag }}", "latest"},
+		},
+	}
+
+	rendered, err := RenderTags(targets, vars)
+	if err != nil {
+		t.Fatalf("RenderTags() error = %v", err)
+	}
+
+	if rendered[0].Registry != "ghcr.io/owner/myapp" {
+		t.Errorf("rendered[0].Registry = %q, want %q", rendered[0].Registry, "ghcr.io/owner/myapp")
+	}
+}
+
+func TestResolveTemplateVarsRegistryFromEnv(t *testing.T) {
+	t.Setenv("LAZYOCI_REGISTRY", "localhost:5050")
+	t.Setenv("LAZYOCI_VERSION", "")
+
+	vars := ResolveTemplateVars("v1.0.0", "")
+	if vars.Registry != "localhost:5050" {
+		t.Errorf("Registry = %q, want %q", vars.Registry, "localhost:5050")
+	}
+}
+
+func TestResolveTemplateVarsRegistryEmpty(t *testing.T) {
+	t.Setenv("LAZYOCI_REGISTRY", "")
+
+	vars := ResolveTemplateVars("v1.0.0", "")
+	if vars.Registry != "" {
+		t.Errorf("Registry = %q, want empty", vars.Registry)
+	}
+}
+
 func TestRenderTagsError(t *testing.T) {
 	vars := &TemplateVars{Tag: "v1"}
 

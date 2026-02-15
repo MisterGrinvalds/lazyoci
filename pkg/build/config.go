@@ -96,9 +96,11 @@ type Artifact struct {
 // Target describes a registry push destination.
 type Target struct {
 	// Registry is the registry URL (e.g., "ghcr.io/owner", "docker.io/library").
+	// Supports template variables, e.g., "{{ .Registry }}/path/to/repo".
 	Registry string `yaml:"registry"`
 
 	// Tags are the tags to push. Template variables are supported:
+	//   {{ .Registry }}          — base registry URL (from LAZYOCI_REGISTRY env var)
 	//   {{ .Tag }}               — value of --tag flag (or LAZYOCI_TAG env var)
 	//   {{ .GitSHA }}            — current git commit SHA (short)
 	//   {{ .GitBranch }}         — current git branch name
@@ -127,8 +129,12 @@ type FileEntry struct {
 // Template variables
 // ---------------------------------------------------------------------------
 
-// TemplateVars holds the values available in tag templates.
+// TemplateVars holds the values available in tag and registry templates.
 type TemplateVars struct {
+	// Registry is the base registry URL from LAZYOCI_REGISTRY env var.
+	// Used in registry field templates: {{ .Registry }}/path/to/repo
+	Registry string
+
 	// Tag is the value of the --tag flag (or LAZYOCI_TAG env var).
 	Tag string
 
@@ -281,6 +287,7 @@ func (a *Artifact) validate(index int) error {
 //  3. git describe --tags --abbrev=0 (nearest annotated/lightweight tag)
 func ResolveTemplateVars(tag, chartVersion string) *TemplateVars {
 	vars := &TemplateVars{
+		Registry:     os.Getenv("LAZYOCI_REGISTRY"),
 		Tag:          tag,
 		ChartVersion: chartVersion,
 		Timestamp:    time.Now().UTC().Format("20060102150405"),
@@ -348,13 +355,19 @@ func applyVersion(vars *TemplateVars, sv *Semver) {
 	vars.VersionRaw = sv.Raw
 }
 
-// RenderTags applies template variables to all tags in all targets of an artifact.
-// Returns a new slice of Targets with rendered tags (original is not modified).
+// RenderTags applies template variables to all registry URLs and tags in all
+// targets of an artifact.
+// Returns a new slice of Targets with rendered values (original is not modified).
 func RenderTags(targets []Target, vars *TemplateVars) ([]Target, error) {
 	rendered := make([]Target, len(targets))
 	for i, t := range targets {
+		// Render registry URL through templates (supports {{ .Registry }})
+		reg, err := renderTemplate(t.Registry, vars)
+		if err != nil {
+			return nil, fmt.Errorf("target[%d].registry: failed to render %q: %w", i, t.Registry, err)
+		}
 		rendered[i] = Target{
-			Registry: t.Registry,
+			Registry: reg,
 			Tags:     make([]string, len(t.Tags)),
 		}
 		for j, tagTmpl := range t.Tags {
