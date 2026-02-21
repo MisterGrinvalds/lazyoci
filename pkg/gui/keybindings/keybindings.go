@@ -17,6 +17,7 @@ type Controller interface {
 	FocusDetails()
 	CycleFocus()
 	IsInputFocused() bool
+	IsModalOpen() bool
 	ShowSettings()
 	ShowHelp()
 	ShowThemePicker()
@@ -25,6 +26,11 @@ type Controller interface {
 // Setup configures all keybindings for the application
 func Setup(app *tview.Application, ctrl Controller) {
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		// When a modal is open, let it handle all keys — skip global bindings
+		if ctrl.IsModalOpen() {
+			return event
+		}
+
 		inInput := ctrl.IsInputFocused()
 
 		// Handle Escape - exit input fields

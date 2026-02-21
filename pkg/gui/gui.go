@@ -37,6 +37,9 @@ type GUI struct {
 	mainFlex  *tview.Flex
 	leftPanel *tview.Flex
 	content   *tview.Flex
+
+	// State
+	modalOpen bool
 }
 
 // New creates a new GUI instance
@@ -65,11 +68,12 @@ func (g *GUI) setupViews() {
 	// Registry selection → moves to search with that registry
 	g.registryView = views.NewRegistryView(g.registry, g.onRegistrySelected)
 
-	// Wire up add/delete callbacks
+	// Wire up add/edit/delete callbacks
 	g.registryView.SetOnAdd(g.showAddRegistryModal)
+	g.registryView.SetOnEdit(g.showEditRegistryModal)
 	g.registryView.SetOnDelete(g.showDeleteConfirmation)
 
-	// Registry modal for adding new registries
+	// Registry modal for adding/editing registries
 	g.registryModal = views.NewRegistryModal(g.onRegistrySave, g.hideModal)
 
 	// Settings modal for configuring artifact storage
@@ -180,14 +184,29 @@ func (g *GUI) applyStatusBarTheme() {
 
 // showAddRegistryModal shows the add registry modal
 func (g *GUI) showAddRegistryModal() {
+	g.modalOpen = true
 	g.registryModal.Clear()
 	g.registryModal.ApplyTheme() // Ensure current theme is applied
 	g.pages.ShowPage("add-registry")
 	g.app.SetFocus(g.registryModal.Form)
 }
 
+// showEditRegistryModal shows the registry modal pre-filled for editing
+func (g *GUI) showEditRegistryModal(url string) {
+	reg := g.config.GetRegistry(url)
+	if reg == nil {
+		return
+	}
+	g.modalOpen = true
+	g.registryModal.SetRegistry(*reg)
+	g.registryModal.ApplyTheme()
+	g.pages.ShowPage("add-registry")
+	g.app.SetFocus(g.registryModal.Form)
+}
+
 // hideModal hides the current modal and returns to main
 func (g *GUI) hideModal() {
+	g.modalOpen = false
 	g.pages.HidePage("add-registry")
 	g.pages.HidePage("confirm-delete")
 	g.pages.SwitchToPage("main")
@@ -196,6 +215,7 @@ func (g *GUI) hideModal() {
 
 // ShowSettings shows the settings modal
 func (g *GUI) ShowSettings() {
+	g.modalOpen = true
 	g.settingsModal.ApplyTheme() // Ensure current theme is applied
 	g.settingsModal.Refresh()
 	g.pages.ShowPage("settings")
@@ -204,6 +224,7 @@ func (g *GUI) ShowSettings() {
 
 // hideSettingsModal hides the settings modal
 func (g *GUI) hideSettingsModal() {
+	g.modalOpen = false
 	g.pages.HidePage("settings")
 	g.pages.HidePage("settings-confirm")
 	g.pages.SwitchToPage("main")
@@ -270,6 +291,7 @@ func (g *GUI) showSettingsConfirmation(title, message string, onYes, onNo, onCan
 		modal.SetTitle(" " + title + " ")
 	}
 
+	g.modalOpen = true
 	g.pages.AddPage("settings-confirm", modal, true, true)
 }
 
@@ -301,6 +323,7 @@ func (g *GUI) ShowHelp() {
 
 	textView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEscape || event.Key() == tcell.KeyEnter || event.Rune() == 'q' {
+			g.modalOpen = false
 			g.pages.RemovePage("help")
 			g.app.SetFocus(g.registryView.List)
 			return nil
@@ -308,6 +331,7 @@ func (g *GUI) ShowHelp() {
 		return event
 	})
 
+	g.modalOpen = true
 	g.pages.AddPage("help", flex, true, true)
 	g.app.SetFocus(textView)
 }
@@ -357,6 +381,7 @@ func (g *GUI) ShowThemePicker() {
 			// Apply theme to all views
 			g.applyThemeToAllViews()
 
+			g.modalOpen = false
 			g.pages.RemovePage("theme-picker")
 			g.app.SetFocus(g.registryView.List)
 		}
@@ -364,6 +389,7 @@ func (g *GUI) ShowThemePicker() {
 
 	list.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEscape || event.Rune() == 'q' {
+			g.modalOpen = false
 			g.pages.RemovePage("theme-picker")
 			g.app.SetFocus(g.registryView.List)
 			return nil
@@ -381,18 +407,19 @@ func (g *GUI) ShowThemePicker() {
 		AddItem(nil, 0, 1, false)
 	flex.SetBackgroundColor(theme.BackgroundColor())
 
+	g.modalOpen = true
 	g.pages.AddPage("theme-picker", flex, true, true)
 	g.app.SetFocus(list)
 }
 
-// onRegistrySave handles saving a new registry
-func (g *GUI) onRegistrySave(name, url, username, password string) {
-	var err error
-	if username != "" {
-		err = g.registry.AddRegistryWithAuth(name, url, username, password)
-	} else {
-		err = g.registry.AddRegistry(name, url)
+// onRegistrySave handles saving a new or edited registry
+func (g *GUI) onRegistrySave(name, url, username, password string, insecure bool) {
+	// If editing, remove the old entry first (URL may have changed)
+	if g.registryModal.IsEditing() {
+		_ = g.registry.RemoveRegistry(g.registryModal.EditingURL())
 	}
+
+	err := g.registry.AddRegistryFull(name, url, username, password, insecure)
 
 	if err != nil {
 		g.statusBar.SetText(fmt.Sprintf("%sError: %v%s", theme.Tag("error"), err, theme.ResetTag()))
@@ -401,7 +428,11 @@ func (g *GUI) onRegistrySave(name, url, username, password string) {
 		if name != "" {
 			label = name
 		}
-		g.statusBar.SetText(fmt.Sprintf("%sRegistry %s added%s", theme.Tag("success"), label, theme.ResetTag()))
+		action := "added"
+		if g.registryModal.IsEditing() {
+			action = "updated"
+		}
+		g.statusBar.SetText(fmt.Sprintf("%sRegistry %s %s%s", theme.Tag("success"), label, action, theme.ResetTag()))
 		g.registryView.Refresh()
 	}
 
@@ -422,6 +453,7 @@ func (g *GUI) showDeleteConfirmation(url string) {
 					g.registryView.Refresh()
 				}
 			}
+			g.modalOpen = false
 			g.pages.RemovePage("confirm-delete")
 			g.app.SetFocus(g.registryView.List)
 		})
@@ -434,6 +466,7 @@ func (g *GUI) showDeleteConfirmation(url string) {
 	modal.SetButtonBackgroundColor(theme.ButtonBgColor())
 	modal.SetButtonTextColor(theme.ButtonTextColor())
 
+	g.modalOpen = true
 	g.pages.AddPage("confirm-delete", modal, true, true)
 }
 
@@ -492,6 +525,7 @@ func (g *GUI) showPullModal(artifact *registry.Artifact) {
 		SetText(text).
 		AddButtons(buttons).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			g.modalOpen = false
 			g.pages.RemovePage("pull-modal")
 			g.app.SetFocus(g.artifactView.GetTable())
 
@@ -511,6 +545,7 @@ func (g *GUI) showPullModal(artifact *registry.Artifact) {
 	modal.SetButtonBackgroundColor(theme.ButtonBgColor())
 	modal.SetButtonTextColor(theme.ButtonTextColor())
 
+	g.modalOpen = true
 	g.pages.AddPage("pull-modal", modal, true, true)
 }
 
@@ -642,6 +677,11 @@ func (g *GUI) FocusDetails() {
 func (g *GUI) IsInputFocused() bool {
 	current := g.app.GetFocus()
 	return current == g.searchView.InputField || current == g.artifactView.FilterInput
+}
+
+// IsModalOpen returns true if any modal overlay is currently visible
+func (g *GUI) IsModalOpen() bool {
+	return g.modalOpen
 }
 
 func (g *GUI) updateStatus() {
