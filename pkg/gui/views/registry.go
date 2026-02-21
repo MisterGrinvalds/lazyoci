@@ -14,6 +14,7 @@ type RegistryView struct {
 	registry *registry.Client
 	onSelect func(registryURL string)
 	onAdd    func()
+	onEdit   func(registryURL string)
 	onDelete func(registryURL string)
 
 	registries []config.Registry
@@ -31,7 +32,7 @@ func NewRegistryView(reg *registry.Client, onSelect func(registryURL string)) *R
 		ShowSecondaryText(false).
 		SetHighlightFullLine(true)
 
-	rv.List.SetBorder(true).SetTitle(" [1] Registries (a:add d:del) ")
+	rv.List.SetBorder(true).SetTitle(" [1] Registries (a:add e:edit d:del) ")
 
 	// Apply theme styling
 	rv.ApplyTheme()
@@ -54,6 +55,14 @@ func NewRegistryView(reg *registry.Client, onSelect func(registryURL string)) *R
 		case 'a', 'A':
 			if rv.onAdd != nil {
 				rv.onAdd()
+			}
+			return nil
+		case 'e', 'E':
+			if rv.onEdit != nil {
+				url := rv.GetSelectedRegistry()
+				if url != "" {
+					rv.onEdit(url)
+				}
 			}
 			return nil
 		case 'd', 'D':
@@ -85,6 +94,11 @@ func (rv *RegistryView) ApplyTheme() {
 // SetOnAdd sets the callback for adding a registry
 func (rv *RegistryView) SetOnAdd(fn func()) {
 	rv.onAdd = fn
+}
+
+// SetOnEdit sets the callback for editing a registry
+func (rv *RegistryView) SetOnEdit(fn func(registryURL string)) {
+	rv.onEdit = fn
 }
 
 // SetOnDelete sets the callback for deleting a registry
