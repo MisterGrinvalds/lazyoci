@@ -145,6 +145,27 @@ func (c *Config) AddRegistryWithAuth(name, url, username, password string) error
 	return c.Save()
 }
 
+// AddRegistryFull adds a registry with all fields including insecure flag.
+// If name is empty, it defaults to the URL.
+func (c *Config) AddRegistryFull(name, url, username, password string, insecure bool) error {
+	// Remove if exists (upsert behavior)
+	c.RemoveRegistry(url)
+
+	if name == "" {
+		name = url
+	}
+
+	c.Registries = append(c.Registries, Registry{
+		Name:     name,
+		URL:      url,
+		Username: username,
+		Password: password,
+		Insecure: insecure,
+	})
+
+	return c.Save()
+}
+
 // RemoveRegistry removes a registry from the configuration
 func (c *Config) RemoveRegistry(url string) error {
 	for i, r := range c.Registries {

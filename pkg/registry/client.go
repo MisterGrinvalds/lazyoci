@@ -124,6 +124,12 @@ func (c *Client) AddRegistryWithAuth(name, url, username, password string) error
 	return c.config.AddRegistryWithAuth(name, url, username, password)
 }
 
+// AddRegistryFull adds a registry with all fields including insecure flag.
+// If name is empty, it defaults to the URL.
+func (c *Client) AddRegistryFull(name, url, username, password string, insecure bool) error {
+	return c.config.AddRegistryFull(name, url, username, password, insecure)
+}
+
 // RemoveRegistry removes a registry
 func (c *Client) RemoveRegistry(url string) error {
 	// Clear cached client
