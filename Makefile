@@ -5,7 +5,8 @@
 	test-registry test-config test-cache test-pull test-artifacts test-build test-all \
 	docs-install docs-dev docs-build docs-serve \
 	release-token release-test release-dry-run \
-	build-local build-docr
+	build-local build-docr \
+	test-docr-helm test-docr-artifact test-docr-docker test-docr-multi test-docr-all
 
 # Build variables
 BINARY_NAME := lazyoci
@@ -262,18 +263,45 @@ test-all:
 	go test -v -race -count=1 ./...
 
 # ---------------------------------------------------------------------------
-# Example Builds (dry-run against local or DigitalOcean registry)
+# Example Builds
 # ---------------------------------------------------------------------------
+
+DOCR := registry.digitalocean.com/greenforests
+DOCR_TAG ?= v0.1.0-test
 
 ## build-local: Dry-run build examples against local registry (localhost:5050)
 build-local: build
 	LAZYOCI_REGISTRY=localhost:5050 $(BUILD_DIR)/$(BINARY_NAME) build \
-		--file examples/multi/.lazy --tag v0.1.0-test --insecure --dry-run
+		--file examples/multi/.lazy --tag $(DOCR_TAG) --insecure --dry-run
 
 ## build-docr: Dry-run build examples against DigitalOcean registry
 build-docr: build
-	LAZYOCI_REGISTRY=registry.digitalocean.com/greenforests $(BUILD_DIR)/$(BINARY_NAME) build \
-		--file examples/multi/.lazy --tag v0.1.0-test --dry-run
+	LAZYOCI_REGISTRY=$(DOCR) $(BUILD_DIR)/$(BINARY_NAME) build \
+		--file examples/multi/.lazy --tag $(DOCR_TAG) --dry-run
+
+## test-docr-helm: Build and push Helm chart to DigitalOcean registry
+test-docr-helm: build
+	LAZYOCI_REGISTRY=$(DOCR) $(BUILD_DIR)/$(BINARY_NAME) build \
+		--file examples/helm/.lazy --tag $(DOCR_TAG)
+
+## test-docr-artifact: Build and push generic artifact to DigitalOcean registry
+test-docr-artifact: build
+	LAZYOCI_REGISTRY=$(DOCR) $(BUILD_DIR)/$(BINARY_NAME) build \
+		--file examples/artifact/.lazy --tag $(DOCR_TAG)
+
+## test-docr-docker: Build and push Docker daemon image to DigitalOcean registry
+test-docr-docker: build
+	@docker pull nginx:alpine 2>/dev/null || true
+	LAZYOCI_REGISTRY=$(DOCR) $(BUILD_DIR)/$(BINARY_NAME) build \
+		--file examples/docker/.lazy --tag $(DOCR_TAG)
+
+## test-docr-multi: Build and push all multi-example artifacts to DigitalOcean registry
+test-docr-multi: build
+	LAZYOCI_REGISTRY=$(DOCR) $(BUILD_DIR)/$(BINARY_NAME) build \
+		--file examples/multi/.lazy --tag $(DOCR_TAG)
+
+## test-docr-all: Build and push all examples to DigitalOcean registry
+test-docr-all: test-docr-helm test-docr-artifact test-docr-docker test-docr-multi
 
 # ---------------------------------------------------------------------------
 # Documentation (Docusaurus)
