@@ -67,6 +67,7 @@ runs:
       shell: bash
       env:
         LAZYOCI_INSTALL_VERSION: ${{ inputs.lazyoci-version }}
+        GH_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
 

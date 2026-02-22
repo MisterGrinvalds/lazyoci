@@ -3,7 +3,16 @@ package mirror
 import (
 	"bytes"
 	"testing"
+
+	"github.com/mistergrinvalds/lazyoci/pkg/config"
 )
+
+// testAppConfig returns a minimal app config for tests that create a Mirrorer.
+// Without this, the credential chain panics on nil config in CI where no
+// Docker credentials exist to short-circuit the lookup.
+func testAppConfig() *config.Config {
+	return &config.Config{}
+}
 
 func TestNew_DefaultConcurrency(t *testing.T) {
 	tests := []struct {
@@ -81,6 +90,7 @@ func TestMirrorOne_VersionOverride(t *testing.T) {
 
 	m := New(Options{
 		Config:     cfg,
+		AppConfig:  testAppConfig(),
 		DryRun:     true,
 		ChartsOnly: true, // skip image extraction to avoid needing helm binary
 		Log:        &bytes.Buffer{},
@@ -119,9 +129,10 @@ func TestMirrorAll_SkipsEmptyVersions(t *testing.T) {
 
 	var log bytes.Buffer
 	m := New(Options{
-		Config: cfg,
-		DryRun: true,
-		Log:    &log,
+		Config:    cfg,
+		AppConfig: testAppConfig(),
+		DryRun:    true,
+		Log:       &log,
 	})
 
 	result, err := m.MirrorAll(t.Context())
