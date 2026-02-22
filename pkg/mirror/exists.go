@@ -22,6 +22,6 @@ func Exists(ctx context.Context, ref string, insecure bool, credFn auth.Credenti
 		return false
 	}
 
-	_, err = repo.Resolve(ctx, parsed.Tag)
+	_, err = repo.Resolve(ctx, parsed.Ref())
 	return err == nil
 }

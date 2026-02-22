@@ -88,7 +88,7 @@ func (p *Puller) Pull(ctx context.Context, opts PullOptions) (*PullResult, error
 	}
 
 	// Detect artifact type by inspecting manifest
-	artifactType, typeDetail, configMediaType := p.detectArtifactType(ctx, repo, ref.Tag)
+	artifactType, typeDetail, configMediaType := p.detectArtifactType(ctx, repo, ref.Ref())
 
 	// Determine destination based on artifact type
 	dest := opts.Destination
@@ -101,7 +101,7 @@ func (p *Puller) Pull(ctx context.Context, opts PullOptions) (*PullResult, error
 		}
 		// Use type-specific subdirectories
 		typeDir := getTypeDirectory(artifactType)
-		dest = filepath.Join(artifactBase, typeDir, ref.Registry, ref.Repository, ref.Tag)
+		dest = filepath.Join(artifactBase, typeDir, ref.Registry, ref.Repository, ref.Ref())
 	}
 
 	// Route to type-specific pull based on artifact type
@@ -237,7 +237,7 @@ func (p *Puller) pullOCILayout(
 	}
 
 	// Perform the copy
-	desc, err := oras.Copy(ctx, repo, ref.Tag, store, ref.Tag, copyOpts)
+	desc, err := oras.Copy(ctx, repo, ref.Ref(), store, ref.Ref(), copyOpts)
 	if err != nil {
 		return nil, fmt.Errorf("pull failed: %w", err)
 	}
@@ -259,8 +259,8 @@ func (p *Puller) pullOCILayout(
 		if artifactType != registry.ArtifactTypeImage {
 			return result, fmt.Errorf("cannot load %s artifact into Docker (only images supported)", artifactType)
 		}
-		// Build a full reference with tag — Docker requires "repo:tag" format.
-		dockerRef := ref.Registry + "/" + ref.Repository + ":" + ref.Tag
+		// Build a full reference — Docker requires "repo:tag" or "repo@digest" format.
+		dockerRef := ref.String()
 		if err := LoadToDocker(dest, dockerRef); err != nil {
 			return result, fmt.Errorf("pulled but failed to load into Docker: %w", err)
 		}

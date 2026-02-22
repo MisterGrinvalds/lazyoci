@@ -105,7 +105,7 @@ func CopyOCIChart(ctx context.Context, srcRef, dstRef string, srcInsecure, dstIn
 		return fmt.Errorf("creating destination repo: %w", err)
 	}
 
-	_, err = oras.Copy(ctx, srcRepo, srcParsed.Tag, dstRepo, dstParsed.Tag, oras.CopyOptions{})
+	_, err = oras.Copy(ctx, srcRepo, srcParsed.Ref(), dstRepo, dstParsed.Ref(), oras.CopyOptions{})
 	if err != nil {
 		return fmt.Errorf("oras copy: %w", err)
 	}

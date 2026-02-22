@@ -92,7 +92,7 @@ func CopyImage(ctx context.Context, srcRef, dstRef string, srcInsecure, dstInsec
 		return fmt.Errorf("destination repo: %w", err)
 	}
 
-	_, err = oras.Copy(ctx, srcRepo, srcParsed.Tag, dstRepo, dstParsed.Tag, oras.CopyOptions{})
+	_, err = oras.Copy(ctx, srcRepo, srcParsed.Ref(), dstRepo, dstParsed.Ref(), oras.CopyOptions{})
 	if err != nil {
 		return fmt.Errorf("copy: %w", err)
 	}
