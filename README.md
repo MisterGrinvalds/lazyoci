@@ -11,6 +11,7 @@ Browse Docker Hub, Quay.io, GitHub Packages, and custom registries to discover c
 - **Artifact type detection** -- automatically identifies images, Helm charts, SBOMs, signatures, attestations, and WASM modules
 - **Pull artifacts** -- download to local OCI layout or load directly into Docker
 - **Build and push** -- build container images, package Helm charts, and push OCI artifacts from a `.lazy` config file
+- **Mirror upstream charts** -- mirror Helm chart OCI artifacts and their container images to a private registry
 - **Docker credential integration** -- reads credentials from Docker Desktop, credential helpers, and `~/.docker/config.json`
 - **Search** -- find repositories across registries
 - **CLI commands** -- scriptable interface with JSON/YAML output
@@ -210,6 +211,29 @@ Four artifact types are supported:
 Tag templates support `{{ .Version }}`, `{{ .VersionMajor }}`, `{{ .VersionMinor }}`, `{{ .VersionPatch }}`, `{{ .VersionMajorMinor }}`, `{{ .Tag }}`, `{{ .GitSHA }}`, `{{ .GitBranch }}`, `{{ .ChartVersion }}`, and `{{ .Timestamp }}`.
 
 See [`examples/`](examples/) for complete examples of each artifact type.
+
+### Mirror Charts & Images
+
+```bash
+# Mirror all charts from config
+lazyoci mirror --config mirror.yaml --all
+
+# Mirror a specific chart
+lazyoci mirror --config mirror.yaml --chart vault
+
+# Dry run -- preview what would be mirrored
+lazyoci mirror --config mirror.yaml --all --dry-run
+
+# Charts only (skip container images)
+lazyoci mirror --config mirror.yaml --chart vault --charts-only
+
+# JSON output
+lazyoci mirror --config mirror.yaml --all -o json
+```
+
+Configuration is read from a `mirror.yaml` file that defines upstream chart sources (Helm repos, OCI registries, or local directories), version lists, and the target registry. Artifacts already present in the target are skipped automatically.
+
+See [`examples/mirror/`](examples/mirror/) for a complete example configuration.
 
 ### Manage Registries
 

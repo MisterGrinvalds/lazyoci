@@ -1,6 +1,6 @@
-# lazyoci build examples
+# lazyoci examples
 
-Each subdirectory demonstrates building and pushing a different type of OCI artifact using `lazyoci build`.
+Each subdirectory demonstrates a different lazyoci capability — building OCI artifacts, or mirroring upstream charts and images to a private registry.
 
 ## Prerequisites
 
@@ -67,6 +67,21 @@ A single `.lazy` file that builds an image, packages its Helm chart, and publish
 lazyoci build examples/multi --tag v1.0.0                      # build all three
 lazyoci build examples/multi --tag v1.0.0 --artifact api-chart  # helm chart only
 lazyoci build examples/multi --tag v1.0.0 --dry-run -o json     # preview as JSON
+```
+
+### [`mirror/`](mirror/) — Mirror upstream charts & images
+
+Mirrors Helm charts and their container images from upstream sources to a target OCI registry. Includes a demo local chart and examples of all three source types (repo, oci, local).
+
+```sh
+# Preview what would be mirrored
+lazyoci mirror --config examples/mirror/mirror.yaml --all --dry-run
+
+# Mirror all charts
+lazyoci mirror --config examples/mirror/mirror.yaml --all --insecure
+
+# Mirror a specific chart
+lazyoci mirror --config examples/mirror/mirror.yaml --chart vault
 ```
 
 ## Quick test (local registry)
