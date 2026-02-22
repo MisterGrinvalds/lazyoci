@@ -141,7 +141,14 @@ func execCredentialHelper(helperName string, registryURL string) (username, pass
 		if errors.Is(err, exec.ErrNotFound) {
 			return "", "", ErrNotImplemented
 		}
-		// The helper returned an error (e.g. "credentials not found").
+		// Docker credential helpers print "credentials not found" (or similar)
+		// to stdout and exit non-zero when no entry exists for the registry.
+		// Map this to ErrCredentialsNotFound so the ChainedStore continues
+		// to the next backend instead of propagating an unexpected error.
+		combined := strings.ToLower(stdout.String() + stderr.String())
+		if strings.Contains(combined, "credentials not found") {
+			return "", "", ErrCredentialsNotFound
+		}
 		return "", "", fmt.Errorf("credential helper %s: %w (%s)", binaryName, err, strings.TrimSpace(stderr.String()))
 	}
 
