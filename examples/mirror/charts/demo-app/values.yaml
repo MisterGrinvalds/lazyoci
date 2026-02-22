@@ -1,0 +1,8 @@
+image:
+  repository: nginx
+  tag: alpine
+
+sidecar:
+  image:
+    repository: busybox
+    tag: "1.36"

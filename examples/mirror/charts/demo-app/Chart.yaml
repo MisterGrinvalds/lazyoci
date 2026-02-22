@@ -1,0 +1,6 @@
+apiVersion: v2
+name: demo-app
+version: 0.1.0
+description: A minimal chart for testing lazyoci mirror with local source type
+type: application
+appVersion: "1.0.0"

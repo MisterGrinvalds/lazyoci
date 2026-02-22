@@ -10,6 +10,7 @@ module.exports = {
       items: [
         'cli/pull',
         'cli/build',
+        'cli/mirror',
         'cli/browse',
         'cli/registry',
         'cli/config',

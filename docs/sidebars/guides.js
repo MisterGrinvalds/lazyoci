@@ -34,6 +34,14 @@ module.exports = {
     },
     {
       type: 'category',
+      label: 'Mirroring',
+      collapsed: false,
+      items: [
+        'mirroring-charts',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Troubleshooting',
       collapsed: false,
       items: [

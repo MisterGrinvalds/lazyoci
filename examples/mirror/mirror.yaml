@@ -1,0 +1,41 @@
+# mirror.yaml — Example mirror configuration for lazyoci mirror
+#
+# This config is self-contained: the local chart lives in charts/demo-app/
+# alongside this file, so no external paths or repos are needed for testing.
+#
+# Usage:
+#   lazyoci mirror --config examples/mirror/mirror.yaml --chart demo-app --dry-run
+#   lazyoci mirror --config examples/mirror/mirror.yaml --all --dry-run
+#   lazyoci mirror --config examples/mirror/mirror.yaml --chart vault --charts-only
+#   lazyoci mirror --config examples/mirror/mirror.yaml --all -o json
+
+target:
+  url: localhost:5000
+  insecure: true
+  charts-prefix: charts
+
+upstreams:
+
+  # --- repo type: traditional Helm repository ---
+
+  vault:
+    type: repo
+    repo: https://helm.releases.hashicorp.com
+    chart: vault
+    versions: ["0.28.0"]
+
+  # --- oci type: OCI registry source ---
+
+  keycloak:
+    type: oci
+    registry: oci://registry-1.docker.io/bitnamicharts
+    chart: keycloak
+    versions: ["24.0.1"]
+
+  # --- local type: chart directory on disk ---
+
+  demo-app:
+    type: local
+    path: charts/demo-app
+    chart: demo-app
+    versions: ["0.1.0"]

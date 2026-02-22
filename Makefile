@@ -258,6 +258,10 @@ test-artifacts:
 test-build:
 	go test -v ./pkg/build/...
 
+## test-mirror: Test mirror package (config, remap, chart helpers, orchestrator)
+test-mirror:
+	go test -v ./pkg/mirror/...
+
 ## test-all: Run all unit tests with race detection
 test-all:
 	go test -v -race -count=1 ./...
