@@ -1,8 +1,8 @@
-# Example workflow: Build and push OCI artifacts on tag push
+# Example workflow: Build and push OCI artifacts using lazyoci
 #
-# This workflow demonstrates how to use lazyoci in GitHub Actions.
-# It triggers on semver tag pushes and uses the lazyoci action to build
-# and push all artifacts defined in .lazy.
+# This is a reference workflow — copy it to your own repo and add
+# tag-push triggers as needed.  It is manual-dispatch only here
+# because this repo has no .lazy config to build.
 #
 # Template variables are auto-populated:
 #   {{ .Tag }}          -> "v1.2.3" (from git tag)
@@ -16,10 +16,7 @@
 name: Build and Push
 
 on:
-  push:
-    tags: ['v*']
-
-  # Allow manual trigger with version input
+  # Manual trigger only — add "push: tags: ['v*']" in your own repo.
   workflow_dispatch:
     inputs:
       tag:
