@@ -25,6 +25,9 @@ type Options struct {
 	ChartsOnly bool
 	// ImagesOnly mirrors container images but skips chart artifacts.
 	ImagesOnly bool
+	// Force re-copies images even if they already exist in the target registry.
+	// Useful for re-pushing with updated platform tags.
+	Force bool
 	// Concurrency is the number of parallel image copies per chart version.
 	// Defaults to 4 if zero.
 	Concurrency int
@@ -170,7 +173,7 @@ func (m *Mirrorer) mirrorVersion(ctx context.Context, key string, upstream Upstr
 		chartRef := chartBase + "/" + chartName + ":" + version
 		targetCredFn := m.credentialFunc(target.URL)
 
-		if Exists(ctx, chartRef, target.Insecure, targetCredFn) {
+		if !m.opts.Force && Exists(ctx, chartRef, target.Insecure, targetCredFn) {
 			m.logf("  Chart: already exists, skipping\n")
 			vr.ChartStatus = "skipped"
 			m.addChartSkipped()
@@ -273,7 +276,7 @@ func (m *Mirrorer) mirrorImages(ctx context.Context, images []string) []ImageRes
 
 		g.Go(func() error {
 			// Check if target image already exists.
-			if Exists(gctx, dst, target.Insecure, targetCredFn) {
+			if !m.opts.Force && Exists(gctx, dst, target.Insecure, targetCredFn) {
 				m.logf("    %s → exists\n", src)
 				results[i].Status = "skipped"
 				m.addImageSkipped()

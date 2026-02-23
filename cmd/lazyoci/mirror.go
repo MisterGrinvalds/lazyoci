@@ -19,6 +19,7 @@ var (
 	mirrorChartsOnly  bool
 	mirrorImagesOnly  bool
 	mirrorAll         bool
+	mirrorForce       bool
 	mirrorConcurrency int
 )
 
@@ -67,6 +68,7 @@ func init() {
 	mirrorCmd.Flags().BoolVar(&mirrorChartsOnly, "charts-only", false, "Mirror chart artifacts only, skip images")
 	mirrorCmd.Flags().BoolVar(&mirrorImagesOnly, "images-only", false, "Mirror images only, skip chart push")
 	mirrorCmd.Flags().BoolVar(&mirrorAll, "all", false, "Mirror all charts in the config")
+	mirrorCmd.Flags().BoolVar(&mirrorForce, "force", false, "Re-copy images even if they already exist in the target")
 	mirrorCmd.Flags().IntVar(&mirrorConcurrency, "concurrency", 4, "Parallel image copies per chart")
 
 	rootCmd.AddCommand(mirrorCmd)
@@ -104,6 +106,7 @@ func runMirror(cmd *cobra.Command, args []string) error {
 		DryRun:      mirrorDryRun,
 		ChartsOnly:  mirrorChartsOnly,
 		ImagesOnly:  mirrorImagesOnly,
+		Force:       mirrorForce,
 		Concurrency: mirrorConcurrency,
 		Log:         logWriter,
 	}
